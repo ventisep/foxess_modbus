@@ -22,6 +22,7 @@ Supported models:
 - FoxESS H3 (including AC3 and AOI-H3)
 - FoxESS H3 PRO
 - FoxESS P1
+- FoxESS PQ1 (read-only monitoring and experimental diagnostics)
 - FoxESS KH
 - Kuara H3
 - Sonnenkraft SK-HWR
@@ -30,6 +31,21 @@ Supported models:
 - a-TroniX AX
 - Enpal
 - 1KOMMA5°
+
+PQ1 support is based on register observations from a PQ1-8.0 using native LAN
+Modbus TCP (port 502, device ID 247). The new integration profile still needs
+on-device validation. It provides core monitoring, read-only Manual Work Mode
+and Scheduler Enabled. It does not add PQ1 controls or charge-period editing.
+
+PQ1 readings with provisional register interpretations have an **Experimental**
+suffix and are disabled by default, along with raw register diagnostics. Enable
+these individually to compare values; experimental sensors include raw register
+attributes and do not produce long-term statistics or Energy dashboard inputs.
+Manual Work Mode currently labels only the verified Self Use code (`0`); other
+codes have an unknown state with a `raw_value` attribute. Scheduler records can
+be inspected with the existing `foxess_modbus.read_registers` action in small
+holding-register reads. The generic register-write action remains available,
+but PQ1 write semantics have not been established.
 
 You will need a direct connection to your inverter.
 In most cases, this means buying a modbus to ethernet/USB adapter and wiring this to a port on your inverter.

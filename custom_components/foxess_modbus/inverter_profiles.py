@@ -265,6 +265,17 @@ class InverterModelProfile:
 
 # NOTE: If the inverter support LAN and AUX identically, just specify AUX
 _INVERTER_PROFILES_LIST = [
+    # Register evidence from PQ1-8.0 native LAN. AUX is the canonical profile for a common
+    # holding-register map; LAN resolves to it through the existing fallback.
+    InverterModelProfile(InverterModel.PQ1, r"^PQ1-(\d+(?:\.\d+)?)$").add_connection_type(
+        ConnectionType.AUX,
+        RegisterType.HOLDING,
+        versions={None: Inv.PQ1},
+        special_registers=SpecialRegisterConfig(
+            invalid_register_ranges=[(41001, 41006)],
+            individual_read_register_ranges=[(41000, 41011)],
+        ),
+    ),
     # E.g. H1-5.0-E-G2 or H1-5.0-E1-G2. Has to appear before H1_G1.
     InverterModelProfile(
         InverterModel.H1_G2, r"^H1-([\d\.]+)-E\d?-G2", capacity_parser=CapacityParser.H1

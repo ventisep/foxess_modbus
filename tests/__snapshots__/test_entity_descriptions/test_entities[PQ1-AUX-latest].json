@@ -1,0 +1,1138 @@
+[
+  {
+    "addresses": [
+      37610
+    ],
+    "experimental": true,
+    "key": "bat_current",
+    "name": "Battery Current",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31022
+    ],
+    "key": "battery_charge",
+    "name": "Battery Charge",
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      32005
+    ],
+    "experimental": true,
+    "key": "battery_charge_today",
+    "name": "Battery Charge Today",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      32004,
+      32003
+    ],
+    "experimental": true,
+    "key": "battery_charge_total",
+    "name": "Battery Charge Total",
+    "scale": 0.1,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31022
+    ],
+    "key": "battery_discharge",
+    "name": "Battery Discharge",
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      32008
+    ],
+    "experimental": true,
+    "key": "battery_discharge_today",
+    "name": "Battery Discharge Today",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      32007,
+      32006
+    ],
+    "experimental": true,
+    "key": "battery_discharge_total",
+    "name": "Battery Discharge Total",
+    "scale": 0.1,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31024
+    ],
+    "key": "battery_soc",
+    "name": "Battery SoC",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      37624
+    ],
+    "key": "battery_soh",
+    "name": "Battery SoH",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31023
+    ],
+    "experimental": true,
+    "key": "battery_temp",
+    "name": "Battery Temp",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      37609
+    ],
+    "experimental": true,
+    "key": "batvolt",
+    "name": "Battery Voltage",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      37619
+    ],
+    "key": "bms_cell_mv_high",
+    "name": "BMS Cell mV High",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      37620
+    ],
+    "key": "bms_cell_mv_low",
+    "name": "BMS Cell mV Low",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      37617
+    ],
+    "key": "bms_cell_temp_high",
+    "name": "BMS Cell Temp High",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      37618
+    ],
+    "key": "bms_cell_temp_low",
+    "name": "BMS Cell Temp Low",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31025
+    ],
+    "experimental": true,
+    "key": "bms_charge_rate",
+    "name": "BMS Charge Rate",
+    "scale": 0.1,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31026
+    ],
+    "experimental": true,
+    "key": "bms_discharge_rate",
+    "name": "BMS Discharge Rate",
+    "scale": 0.1,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      37632
+    ],
+    "key": "bms_kwh_remaining",
+    "name": "BMS kWh Remaining",
+    "scale": 0.01,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31010
+    ],
+    "key": "eps_rvolt",
+    "name": "EPS Voltage",
+    "scale": 0.1,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      46617,
+      46616
+    ],
+    "experimental": true,
+    "key": "export_power_limit",
+    "name": "Export Power Limit",
+    "scale": null,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31014
+    ],
+    "experimental": true,
+    "key": "feed_in",
+    "name": "Feed-in",
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      32011
+    ],
+    "experimental": true,
+    "key": "feed_in_energy_today",
+    "name": "Feed-in Today",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      32010,
+      32009
+    ],
+    "experimental": true,
+    "key": "feed_in_energy_total",
+    "name": "Feed-in Total",
+    "scale": 0.1,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31014
+    ],
+    "experimental": true,
+    "key": "grid_consumption",
+    "name": "Grid Consumption",
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      32014
+    ],
+    "experimental": true,
+    "key": "grid_consumption_energy_today",
+    "name": "Grid Consumption Today",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      32013,
+      32012
+    ],
+    "experimental": true,
+    "key": "grid_consumption_energy_total",
+    "name": "Grid Consumption Total",
+    "scale": 0.1,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31014
+    ],
+    "experimental": true,
+    "key": "grid_ct",
+    "name": "Grid CT",
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      32020
+    ],
+    "experimental": true,
+    "key": "input_energy_today",
+    "name": "Input Energy Today",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      32019,
+      32018
+    ],
+    "experimental": true,
+    "key": "input_energy_total",
+    "name": "Input Energy Total",
+    "scale": 0.1,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31021
+    ],
+    "experimental": true,
+    "key": "invbatcurrent",
+    "name": "Inverter Battery Current",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31022
+    ],
+    "key": "invbatpower",
+    "name": "Inverter Battery Power",
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31020
+    ],
+    "experimental": true,
+    "key": "invbatvolt",
+    "name": "Inverter Battery Voltage",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39141
+    ],
+    "key": "invtemp",
+    "name": "Inverter Temp",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      32023
+    ],
+    "experimental": true,
+    "key": "load_energy_today",
+    "name": "Load Energy Today",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31016
+    ],
+    "key": "load_power",
+    "name": "Load Power",
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      32022,
+      32021
+    ],
+    "experimental": true,
+    "key": "load_power_total",
+    "name": "Load Energy Total",
+    "scale": 0.1,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      36003
+    ],
+    "is_hex": true,
+    "key": "manager_version",
+    "name": "Version: Manager",
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      41000
+    ],
+    "key": "manual_work_mode",
+    "name": "Manual Work Mode",
+    "options_map": {
+      "0": "Self Use"
+    },
+    "type": "enum-sensor"
+  },
+  {
+    "addresses": [
+      36001
+    ],
+    "is_hex": true,
+    "key": "master_version",
+    "name": "Version: Master",
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      41007
+    ],
+    "key": "max_charge_current",
+    "name": "Max Charge Current",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      41008
+    ],
+    "key": "max_discharge_current",
+    "name": "Max Discharge Current",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      41010
+    ],
+    "key": "max_soc",
+    "name": "Max SoC",
+    "scale": null,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      41009
+    ],
+    "key": "min_soc",
+    "name": "Min SoC",
+    "scale": null,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      41011
+    ],
+    "key": "min_soc_on_grid",
+    "name": "Min SoC (On Grid)",
+    "scale": null,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31000
+    ],
+    "key": "pq1_register_31000",
+    "name": "PQ1 Register 31000 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31003
+    ],
+    "key": "pq1_register_31003",
+    "name": "PQ1 Register 31003 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31015
+    ],
+    "key": "pq1_register_31015",
+    "name": "PQ1 Register 31015 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31019
+    ],
+    "key": "pq1_register_31019",
+    "name": "PQ1 Register 31019 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31027
+    ],
+    "key": "pq1_register_31027",
+    "name": "PQ1 Register 31027 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31028
+    ],
+    "key": "pq1_register_31028",
+    "name": "PQ1 Register 31028 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31039
+    ],
+    "key": "pq1_register_31039",
+    "name": "PQ1 Register 31039 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31042
+    ],
+    "key": "pq1_register_31042",
+    "name": "PQ1 Register 31042 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      37002
+    ],
+    "key": "pq1_register_37002",
+    "name": "PQ1 Register 37002 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      37611
+    ],
+    "key": "pq1_register_37611",
+    "name": "PQ1 Register 37611 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39063
+    ],
+    "key": "pq1_register_39063",
+    "name": "PQ1 Register 39063 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39065
+    ],
+    "key": "pq1_register_39065",
+    "name": "PQ1 Register 39065 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39067
+    ],
+    "key": "pq1_register_39067",
+    "name": "PQ1 Register 39067 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39068
+    ],
+    "key": "pq1_register_39068",
+    "name": "PQ1 Register 39068 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39069
+    ],
+    "key": "pq1_register_39069",
+    "name": "PQ1 Register 39069 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39123
+    ],
+    "key": "pq1_register_39123",
+    "name": "PQ1 Register 39123 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39126
+    ],
+    "key": "pq1_register_39126",
+    "name": "PQ1 Register 39126 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39134
+    ],
+    "key": "pq1_register_39134",
+    "name": "PQ1 Register 39134 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39204
+    ],
+    "key": "pq1_register_39204",
+    "name": "PQ1 Register 39204 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39205
+    ],
+    "key": "pq1_register_39205",
+    "name": "PQ1 Register 39205 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39216
+    ],
+    "key": "pq1_register_39216",
+    "name": "PQ1 Register 39216 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39217
+    ],
+    "key": "pq1_register_39217",
+    "name": "PQ1 Register 39217 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39225
+    ],
+    "key": "pq1_register_39225",
+    "name": "PQ1 Register 39225 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39226
+    ],
+    "key": "pq1_register_39226",
+    "name": "PQ1 Register 39226 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39237
+    ],
+    "key": "pq1_register_39237",
+    "name": "PQ1 Register 39237 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39238
+    ],
+    "key": "pq1_register_39238",
+    "name": "PQ1 Register 39238 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39248
+    ],
+    "key": "pq1_register_39248",
+    "name": "PQ1 Register 39248 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39249
+    ],
+    "key": "pq1_register_39249",
+    "name": "PQ1 Register 39249 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39256
+    ],
+    "key": "pq1_register_39256",
+    "name": "PQ1 Register 39256 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39257
+    ],
+    "key": "pq1_register_39257",
+    "name": "PQ1 Register 39257 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39270
+    ],
+    "key": "pq1_register_39270",
+    "name": "PQ1 Register 39270 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39271
+    ],
+    "key": "pq1_register_39271",
+    "name": "PQ1 Register 39271 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      44000
+    ],
+    "key": "pq1_register_44000",
+    "name": "PQ1 Register 44000 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      44001
+    ],
+    "key": "pq1_register_44001",
+    "name": "PQ1 Register 44001 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      44002
+    ],
+    "key": "pq1_register_44002",
+    "name": "PQ1 Register 44002 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      46607
+    ],
+    "key": "pq1_register_46607",
+    "name": "PQ1 Register 46607 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      46608
+    ],
+    "key": "pq1_register_46608",
+    "name": "PQ1 Register 46608 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      46609
+    ],
+    "key": "pq1_register_46609",
+    "name": "PQ1 Register 46609 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      46610
+    ],
+    "key": "pq1_register_46610",
+    "name": "PQ1 Register 46610 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      46611
+    ],
+    "key": "pq1_register_46611",
+    "name": "PQ1 Register 46611 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      46618
+    ],
+    "key": "pq1_register_46618",
+    "name": "PQ1 Register 46618 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      46619
+    ],
+    "key": "pq1_register_46619",
+    "name": "PQ1 Register 46619 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      49203
+    ],
+    "key": "pq1_register_49203",
+    "name": "PQ1 Register 49203 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39071
+    ],
+    "key": "pv1_current",
+    "name": "PV1 Current",
+    "scale": 0.01,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39280
+    ],
+    "experimental": true,
+    "key": "pv1_power",
+    "name": "PV1 Power",
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39070
+    ],
+    "key": "pv1_voltage",
+    "name": "PV1 Voltage",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39073
+    ],
+    "key": "pv2_current",
+    "name": "PV2 Current",
+    "scale": 0.01,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39282
+    ],
+    "experimental": true,
+    "key": "pv2_power",
+    "name": "PV2 Power",
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39072
+    ],
+    "key": "pv2_voltage",
+    "name": "PV2 Voltage",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39075
+    ],
+    "key": "pv3_current",
+    "name": "PV3 Current",
+    "scale": 0.01,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39284
+    ],
+    "experimental": true,
+    "key": "pv3_power",
+    "name": "PV3 Power",
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39074
+    ],
+    "key": "pv3_voltage",
+    "name": "PV3 Voltage",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39077
+    ],
+    "key": "pv4_current",
+    "name": "PV4 Current",
+    "scale": 0.01,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39286
+    ],
+    "experimental": true,
+    "key": "pv4_power",
+    "name": "PV4 Power",
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39076
+    ],
+    "key": "pv4_voltage",
+    "name": "PV4 Voltage",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39118
+    ],
+    "key": "pv_power_now",
+    "name": "PV Power",
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31007
+    ],
+    "key": "rcurrent",
+    "name": "Inverter Current",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39139
+    ],
+    "key": "rfreq",
+    "name": "Grid Frequency",
+    "scale": 0.01,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31008
+    ],
+    "key": "rpower",
+    "name": "Inverter Power",
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31006
+    ],
+    "key": "rvolt",
+    "name": "Grid Voltage",
+    "scale": 0.1,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      48000
+    ],
+    "key": "scheduler_enabled",
+    "name": "Scheduler Enabled",
+    "type": "binary-sensor"
+  },
+  {
+    "addresses": [
+      36002
+    ],
+    "is_hex": true,
+    "key": "slave_version",
+    "name": "Version: Slave",
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      32002
+    ],
+    "experimental": true,
+    "key": "solar_energy_today",
+    "name": "Solar Generation Today",
+    "scale": 0.1,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      32001,
+      32000
+    ],
+    "experimental": true,
+    "key": "solar_energy_total",
+    "name": "Solar Generation Total",
+    "scale": 0.1,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      32017
+    ],
+    "experimental": true,
+    "key": "total_yield_today",
+    "name": "Yield Today",
+    "scale": 0.1,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      32016,
+      32015
+    ],
+    "experimental": true,
+    "key": "total_yield_total",
+    "name": "Yield Total",
+    "scale": 0.1,
+    "signed": false,
+    "type": "sensor"
+  }
+]

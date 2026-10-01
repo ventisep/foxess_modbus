@@ -31,7 +31,8 @@ is an archival reference and is no longer synchronised with CSV edits.
   registers as explicitly experimental read-only diagnostics where
   necessary. Keep unknown words raw, preserve candidate meanings in
   descriptions, and retain raw values when testing decoded candidates.
-  Proposed diagnostic keys in the CSV are not implemented entities.
+  The CSV implementation columns identify implemented entities separately from
+  deferred readings; implementation does not constitute hardware validation.
 - Do not gate otherwise useful battery sensors on an unverified BMS
   connection-state interpretation. Compare `31023` and `37611` through
   distinct entities rather than assigning the same entity key twice.
@@ -39,10 +40,13 @@ is an archival reference and is no longer synchronised with CSV edits.
   checks. Do not infer an entire pair or range is readable from a
   neighbouring readable word. Overlapping mapping rows must share
   diagnostic entities rather than create duplicates.
-- The readable scheduler block can be captured as a shared on-demand
-  raw diagnostic snapshot for testing. Do not create 970 regularly
-  polled entities. Dynamic scheduler interpretation and controls remain
-  later-PR work; the snapshot design is provisional.
+- Inspect the readable scheduler block using the existing
+  `foxess_modbus.read_registers` action, with `type: holding` and bounded
+  counts no larger than the configured adapter maximum. Start at `48010`
+  for records. No dedicated snapshot sensor or 970 regularly polled
+  entities are added. Dynamic interpretation and controls remain later-PR
+  work. This reuses the existing register-read service as agreed in the
+  implementation plan.
 - All additions remain read-only. Never poll `41001–41006`, expose
   `44000` as Boolean Remote Enable, or infer physical battery/CT topology
   from register availability. Experimental readings must not silently
@@ -50,6 +54,32 @@ is an archival reference and is no longer synchronised with CSV edits.
 
 The roadmap below remains applicable except for this expanded read-only
 test coverage in PR1.
+
+### PR1 implementation decisions
+
+- PQ1 has its own `InverterModel` and `Inv` flag. The common holding map
+  uses the repository's AUX profile convention with LAN fallback. Only
+  native LAN has supplied hardware evidence; RS485 is not claimed tested.
+- Existing descriptions supply core readings, P1-style battery readings
+  and candidate `320xx` counters. Provisional decoded sensors are marked
+  Experimental, disabled by default, provide raw-word attributes and omit
+  statistics eligibility. Raw diagnostics are also disabled by default.
+  Enable the desired entities in Home Assistant when testing.
+- PV string power initially uses the observed single words `39280`,
+  `39282`, `39284`, `39286`, following the existing P1 single-word pattern.
+  These readings remain experimental. Their preceding high words are not
+  subscribed to until PQ1 readability and width are established. Total PV
+  comes from `39118`; no per-string energy integrators are created from
+  provisional power values.
+- Manual Work Mode uses a read-only enum with `0: Self Use`. Unknown
+  values retain `raw_value` and report unknown state. Scheduler Enabled
+  accepts only 0 and 1. Neither entity can write.
+- BMS readings are not gated by unverified `31028` or `37002` semantics.
+- No PQ1 number/select entities, remote-control manager or charge periods
+  are created. The existing generic write service is unchanged; this is
+  read-only product support, not a new global write-service prohibition.
+- Automated tests use recorded examples and synthetic boundary values.
+  The implemented integration still requires on-device validation.
 
 1.  **PR1 --- Core monitoring:** model/firmware, PV1--PV4,
     grid/import/export, load, battery power/SOC, established BMS, useful
@@ -70,14 +100,14 @@ Assistant; `foxess_modbus` should provide reliable sensor/actuator data.
 
 ## Tested hardware / transport
 
--   FoxESS **PQ1-8.0**, native LAN Modbus TCP port 502, slave/device ID
-    **247**.
--   Native LAN reaches model detection but current integration rejects
-    `PQ1-8.0` as unsupported.
--   Four EQ5000 battery modules installed. Do not equate physical
-    modules with inverter/BMS "channels".
--   Four PV inputs exist; PV1--PV3 tested connected, PV4 observed
-    unused.
+- FoxESS **PQ1-8.0**, native LAN Modbus TCP port 502, slave/device ID
+  **247**.
+- Before PR1, native LAN reached model detection but the integration rejected
+  `PQ1-8.0` as unsupported.
+- Four EQ5000 battery modules installed. Do not equate physical
+  modules with inverter/BMS "channels".
+- Four PV inputs exist; PV1--PV3 tested connected, PV4 observed
+  unused.
 
 ## Evidence levels
 
@@ -95,20 +125,20 @@ predicted change (or equivalent direct evidence).
 
 ### PV
 
-  Register   Meaning                   Scale/notes
-  ---------- ------------------------- -------------
-  39070      PV1 voltage               0.1 V
-  39071      PV1 current               0.01 A
-  39072      PV2 voltage               0.1 V
-  39073      PV2 current               0.01 A
-  39074      PV3 voltage               0.1 V
-  39075      PV3 current               0.01 A
-  39076      PV4 voltage               0.1 V
-  39077      PV4 current               0.01 A
-  39280      PV1 power observed word   W
-  39282      PV2 power observed word   W
-  39284      PV3 power observed word   W
-  39286      PV4 power observed word   W
+| Register | Meaning                 | Scale/notes |
+| -------- | ----------------------- | ----------- |
+| 39070    | PV1 voltage             | 0.1 V       |
+| 39071    | PV1 current             | 0.01 A      |
+| 39072    | PV2 voltage             | 0.1 V       |
+| 39073    | PV2 current             | 0.01 A      |
+| 39074    | PV3 voltage             | 0.1 V       |
+| 39075    | PV3 current             | 0.01 A      |
+| 39076    | PV4 voltage             | 0.1 V       |
+| 39077    | PV4 current             | 0.01 A      |
+| 39280    | PV1 power observed word | W           |
+| 39282    | PV2 power observed word | W           |
+| 39284    | PV3 power observed word | W           |
+| 39286    | PV4 power observed word | W           |
 
 Newer Fox profiles treat PV power as 32-bit pairs `[39280,39279]`,
 `[39282,39281]`, `[39284,39283]`, `[39286,39285]`; test whether PQ1
@@ -175,35 +205,18 @@ while populated. Records sort dynamically by start time; they are not
 stable IDs. The **last populated record is Remaining Time**; preceding
 records are schedules.
 
-  -----------------------------------------------------------------------
-  Offset                  Meaning                 Status
-  ----------------------- ----------------------- -----------------------
-  +0                      populated/valid         Confirmed
-
-  +1                      start time              Confirmed
-
-  +2                      end time                Confirmed
-
-  +3                      scheduler work mode     Confirmed
-
-  +4                      packed Max/Min SOC      Confirmed
-
-  +5                      mode-specific SOC       Confirmed
-                          parameter               
-
-  +6                      mode-specific power     Confirmed
-
-  +7                      scheduler field         structure confirmed;
-                                                  semantic unknown
-
-  +8                      scheduler field         structure confirmed;
-                                                  semantic unknown;
-                                                  controlled changes
-                                                  observed
-
-  +9                      scheduler field         structure confirmed;
-                                                  semantic unknown
-  -----------------------------------------------------------------------
+| Offset | Meaning                     | Status                                                             |
+| ------ | --------------------------- | ------------------------------------------------------------------ |
+| +0     | populated/valid             | Confirmed                                                          |
+| +1     | start time                  | Confirmed                                                          |
+| +2     | end time                    | Confirmed                                                          |
+| +3     | scheduler work mode         | Confirmed                                                          |
+| +4     | packed Max/Min SOC          | Confirmed                                                          |
+| +5     | mode-specific SOC parameter | Confirmed                                                          |
+| +6     | mode-specific power         | Confirmed                                                          |
+| +7     | scheduler field             | structure confirmed; semantic unknown                              |
+| +8     | scheduler field             | structure confirmed; semantic unknown; controlled changes observed |
+| +9     | scheduler field             | structure confirmed; semantic unknown                              |
 
 Time encoding: `(hour << 8) | minute`. SOC examples: `0x640A` =
 max100/min10; 99/11 gave `0x630B`.
@@ -223,17 +236,17 @@ them or assume per-phase semantics.
 
 ## Extended telemetry candidates (PR3 unless clearly proven useful earlier)
 
--   BMS2 on newer models: `37700`, `38307–38310`, `38315–38318`,
-    `38322`, `38330`.
--   Battery channels: `39227–39231` channel 1, `39232–39236` channel 2,
-    `39237–39238` aggregate.
--   Load: `39219–39224` R/S/T, `39225–39226` total.
--   CT2/Meter2: `38914–38921`. Interesting for the separate EV consumer
-    unit, but **register existence does not prove a physical PQ1 CT2
-    input**; verify hardware/manual before wiring.
--   Newer grid CT: `38814–38821`.
--   Alternative newer energy map: `39601–39632`; compare with
-    established PQ1 `320xx`, do not replace speculatively.
+- BMS2 on newer models: `37700`, `38307–38310`, `38315–38318`,
+  `38322`, `38330`.
+- Battery channels: `39227–39231` channel 1, `39232–39236` channel 2,
+  `39237–39238` aggregate.
+- Load: `39219–39224` R/S/T, `39225–39226` total.
+- CT2/Meter2: `38914–38921`. Interesting for the separate EV consumer
+  unit, but **register existence does not prove a physical PQ1 CT2
+  input**; verify hardware/manual before wiring.
+- Newer grid CT: `38814–38821`.
+- Alternative newer energy map: `39601–39632`; compare with
+  established PQ1 `320xx`, do not replace speculatively.
 
 ## Remote-control maps
 
