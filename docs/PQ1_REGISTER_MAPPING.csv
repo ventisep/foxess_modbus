@@ -1,0 +1,290 @@
+Register/Register Range,Semantic Meaning,Inverter Models Using It (including PQ1),Include in PQ1 foxess_modbus mapping (Y/N),Evidence from PQ1 testing,PQ1 status of meaning,Format/scaling,"R RW (R,RW)",PR1 implementation plan (not yet implemented),Proposed Home Assistant sensor names (read-only),Proposed HA domain.key (configured prefix omitted)
+31000,PV1 voltage on older register maps,H1; older KH/H3 variants; PQ1,Y,"Legal/readable on PQ1, but PQ1 PV1 voltage independently confirmed at 39070.",Unknown,U16; older maps typically 0.1 V,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 31000 (raw)
+Candidate: older-map PV1 voltage","sensor.pq1_register_31000
+(proposed diagnostic keys)"
+31003,PV2 voltage on older register maps,H1; older KH/H3 variants; PQ1,Y,Legal/readable; PQ1 PV2 voltage independently confirmed at 39072.,Unknown,U16; older maps typically 0.1 V,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 31003 (raw)
+Candidate: older-map PV2 voltage","sensor.pq1_register_31003
+(proposed diagnostic keys)"
+31006,Grid voltage,H1-G2; P1; related Fox families; PQ1,Y,Observed ~242–243 V and tracked mains.,Confirmed,0.1 V,R,"Yes — planned, read-only",Grid Voltage,sensor.rvolt
+31007,AC/grid current,H1-G2; KH; related families; PQ1,Y,Observed plausible live current (e.g. 1.5–2.6 A).,Strong,0.1 A,R,"Yes — planned, read-only",Inverter Current,sensor.rcurrent
+31008,Inverter power,H1-G2; P1; related families; PQ1,Y,Readable and plausible in PQ1 probes.,Strong,signed power; 0.001 kW,R,"Yes — planned, read-only",Inverter Power,sensor.rpower
+31010,EPS voltage,H1-G2; related families; PQ1,Y,Observed ~242 V.,Confirmed,0.1 V,R,"Yes — planned, read-only",EPS Voltage,sensor.eps_rvolt
+31014,Grid CT / meter power,H1-G2; P1; related families; PQ1,Y,Readable; value observed in probes.,Strong,signed power; scaling model-dependent,R,Yes — experimental read-only; validate verify scaling and flow direction,"Grid CT
+Feed-in
+Grid Consumption","sensor.grid_ct
+sensor.feed_in
+sensor.grid_consumption"
+31015,AC-related telemetry,KH9.9/current KH mapping; PQ1,Y,Legal/readable on PQ1; no controlled semantic correlation yet.,Unknown,Unknown,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 31015 (raw)
+Candidate: CT2 Meter on P1; physical PQ1 CT2 support unproven","sensor.pq1_register_31015
+(proposed diagnostic keys)"
+31016,Load power,H1-G2; P1; related families; PQ1,Y,Readable; observed in PQ1 probes.,Strong,signed power; 0.001 kW,R,"Yes — planned, read-only",Load Power,sensor.load_power
+31019,AC/EPS-related telemetry,KH9.9/current KH mapping; PQ1,Y,Legal/readable; semantic not correlated on PQ1.,Unknown,Unknown,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 31019 (raw)
+Candidate: Ambient Temp on P1","sensor.pq1_register_31019
+(proposed diagnostic keys)"
+31020-31028,Battery/inverter-battery telemetry block,H1-G2; P1; KH; related families; PQ1,Y,Block readable; SOC and battery power fields within it correlated.,Strong (block); individual fields require exact mapping,Mixed,R,Yes — entire 31020–31028 block; P1 meanings provisional; 31027 raw only,"31020: Inverter Battery Voltage (candidate)
+31021: Inverter Battery Current (candidate)
+31022: Inverter Battery Power; Battery Charge / Discharge
+31023: Battery Temp (candidate)
+31024: Battery SoC
+31025: BMS Charge Rate (candidate)
+31026: BMS Discharge Rate (candidate)
+31027: PQ1 Register 31027 (raw; no P1 state mapping)
+31028: BMS Connection State (raw; P1 candidate)","sensor.invbatvolt
+sensor.invbatcurrent
+sensor.invbatpower; sensor.battery_charge; sensor.battery_discharge
+sensor.battery_temp
+sensor.battery_soc
+sensor.bms_charge_rate
+sensor.bms_discharge_rate
+sensor.pq1_register_31027
+sensor.pq1_register_31028
+Raw diagnostic keys proposed; do not gate other sensors on 31028 yet"
+31022,Battery power,H1-G2; P1; related families; PQ1,Y,Observed signed value e.g. raw 64492 interpreted about -1.044 kW.,Strong,S16; 0.001 kW,R,"Yes — planned, read-only","Inverter Battery Power
+Battery Charge
+Battery Discharge","sensor.invbatpower
+sensor.battery_charge
+sensor.battery_discharge"
+31024,Battery SOC,H1-G2; P1; KH; related families; PQ1,Y,"40%, 97%, 98% readings matched Fox state/app.",Confirmed,%,R,"Yes — planned, read-only",Battery SoC,sensor.battery_soc
+31027,Battery-related telemetry,KH9.9/current KH mapping; PQ1,Y,Legal/readable; semantic not yet correlated.,Unknown,Unknown,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 31027 (raw)
+Candidate: inverter state on H1/KH; not used for P1 state in current code","sensor.pq1_register_31027
+(proposed diagnostic keys)"
+31039,PV3 voltage on an older KH map,Older KH; PQ1,Y,"Legal/readable, but PQ1 PV3 voltage confirmed at 39074.",Unknown,Unknown,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 31039 (raw)
+Candidate: older-map PV3 voltage","sensor.pq1_register_31039
+(proposed diagnostic keys)"
+31042,PV4 voltage on an older KH map,Older KH; PQ1,Y,"Legal/readable, but PQ1 PV4 voltage confirmed at 39076.",Unknown,Unknown,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 31042 (raw)
+Candidate: older-map PV4 voltage","sensor.pq1_register_31042
+(proposed diagnostic keys)"
+32000-32023,Accumulated energy counters,H1/H1-G2; P1; H3; KH; newer Fox families; PQ1,Y,All 24 registers readable on PQ1; exact individual counter semantics not all independently correlated.,Strong block / individual meanings need validation,Energy counters; likely paired/32-bit fields with model-specific scaling,R,Yes — experimental read-only; validate validate individual counters and scales; candidate register assignments shown,"32000–01: Solar Generation Total
+32002: Solar Generation Today
+32003–04: Battery Charge Total
+32005: Battery Charge Today
+32006–07: Battery Discharge Total
+32008: Battery Discharge Today
+32009–10: Feed-in Total
+32011: Feed-in Today
+32012–13: Grid Consumption Total
+32014: Grid Consumption Today
+32015–16: Yield Total
+32017: Yield Today
+32018–19: Input Energy Total
+32020: Input Energy Today
+32021–22: Load Energy Total
+32023: Load Energy Today","sensor.solar_energy_total
+sensor.solar_energy_today
+sensor.battery_charge_total
+sensor.battery_charge_today
+sensor.battery_discharge_total
+sensor.battery_discharge_today
+sensor.feed_in_energy_total
+sensor.feed_in_energy_today
+sensor.grid_consumption_energy_total
+sensor.grid_consumption_energy_today
+sensor.total_yield_total
+sensor.total_yield_today
+sensor.input_energy_total
+sensor.input_energy_today
+sensor.load_power_total
+sensor.load_energy_today"
+36001,Master firmware version,Multiple Fox families; PQ1,Y,Changed 277→289 after PQ1 firmware update.,Confirmed,Firmware encoding,R,"Yes — planned, read-only",Version: Master,sensor.master_version
+36002,Slave firmware version,Multiple Fox families; PQ1,Y,Changed 256→257 after firmware update.,Confirmed,Firmware encoding,R,"Yes — planned, read-only",Version: Slave,sensor.slave_version
+36003,Manager firmware version,Multiple Fox families; PQ1,Y,Changed 272→288 after firmware update.,Confirmed,Firmware encoding,R,"Yes — planned, read-only",Version: Manager,sensor.manager_version
+37002,BMS/device status,KH9.9; newer Fox families; PQ1,Y,Legal/readable; meaning not controlled on PQ1.,Probable,Enum/status,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 37002 (raw)
+Candidate: BMS connection state; do not gate PQ1 battery readings on this yet","sensor.pq1_register_37002
+(proposed diagnostic keys)"
+37609-37610,BMS voltage/current,Newer Fox families; PQ1,Y,Readable in PQ1 probing; consistent with newer BMS block.,Probable,Model-specific scaling,R,Yes — experimental read-only; validate verify BMS meanings and scales,"37609: Battery Voltage
+37610: Battery Current","sensor.batvolt
+sensor.bat_current"
+37611,BMS temperature/status telemetry,KH9.9; EVO/newer families; PQ1,Y,Legal/readable on PQ1.,Probable,Temperature/status scaling model-dependent,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 37611 (raw)
+Candidate: BMS temperature; compare with 31023","sensor.pq1_register_37611
+(proposed diagnostic keys)"
+37617-37620,BMS cell voltage/temperature extrema,KH9.9; newer Fox families; PQ1,Y,Legal/readable; values consistent with BMS telemetry.,Strong,Mixed voltage/temperature scaling,R,"Yes — planned, read-only","37617: BMS Cell Temp High
+37618: BMS Cell Temp Low
+37619: BMS Cell mV High
+37620: BMS Cell mV Low","sensor.bms_cell_temp_high
+sensor.bms_cell_temp_low
+sensor.bms_cell_mv_high
+sensor.bms_cell_mv_low"
+37624,Battery state of health,KH9.9; newer Fox families; PQ1,Y,Legal/readable; consistent with BMS block.,Strong,%,R,"Yes — planned, read-only",Battery SoH,sensor.battery_soh
+37632,Battery energy remaining,KH9.9; newer Fox families; PQ1,Y,"Raw 1920 interpreted 19.20 kWh, closely matching 19.68 kWh pack near full.",Confirmed,0.01 kWh,R,"Yes — planned, read-only",BMS kWh Remaining,sensor.bms_kwh_remaining
+"39063,39065",Inverter state/status,H1-G2/P1 and related newer maps; PQ1,Y,Legal/readable; state/status interpretation inherited and plausible.,Probable,Enum/bitfield,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 39063 (raw)
+PQ1 Register 39065 (raw)
+Candidate: P1 inverter state words; validate bit interpretation","sensor.pq1_register_39063
+sensor.pq1_register_39065
+(proposed diagnostic keys)"
+39067-39069,Fault/status words,H1-G2; P1; KH9.9; H3 family; newer Fox; PQ1,Y,Legal/readable on PQ1; same block as other newer Fox models.,Strong,Bitfields,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 39067 (raw)
+PQ1 Register 39068 (raw)
+PQ1 Register 39069 (raw)
+Candidate: fault words; validate decoded fault meanings","sensor.pq1_register_39067
+sensor.pq1_register_39068
+sensor.pq1_register_39069
+(proposed diagnostic keys)"
+39070,PV1 voltage,H1-G2; P1; KH newer maps; H3-Pro/Smart; EVO; PQ1,Y,Daylight value tracked PV1 string.,Confirmed,0.1 V,R,"Yes — planned, read-only",PV1 Voltage,sensor.pv1_voltage
+39071,PV1 current,H1-G2; P1; KH newer maps; H3-Pro/Smart; EVO; PQ1,Y,Daylight value tracked PV1 string.,Confirmed,0.01 A,R,"Yes — planned, read-only",PV1 Current,sensor.pv1_current
+39072,PV2 voltage,H1-G2; P1; KH newer maps; H3-Pro/Smart; EVO; PQ1,Y,Daylight value tracked PV2 string.,Confirmed,0.1 V,R,"Yes — planned, read-only",PV2 Voltage,sensor.pv2_voltage
+39073,PV2 current,H1-G2; P1; KH newer maps; H3-Pro/Smart; EVO; PQ1,Y,Daylight value tracked PV2 string.,Confirmed,0.01 A,R,"Yes — planned, read-only",PV2 Current,sensor.pv2_current
+39074,PV3 voltage,Newer KH; H3-Pro/Smart; EVO; PQ1,Y,Became active with PV3 installation; ~256.1 V.,Confirmed,0.1 V,R,"Yes — planned, read-only",PV3 Voltage,sensor.pv3_voltage
+39075,PV3 current,Newer KH; H3-Pro/Smart; EVO; PQ1,Y,Became active with PV3 installation; ~1.5 A.,Confirmed,0.01 A,R,"Yes — planned, read-only",PV3 Current,sensor.pv3_current
+39076,PV4 voltage,Newer KH; H3-Pro/Smart; PQ1,Y,Unused PV4 showed residual ~23.8 V.,Confirmed,0.1 V,R,"Yes — planned, read-only",PV4 Voltage,sensor.pv4_voltage
+39077,PV4 current,Newer KH; H3-Pro/Smart; PQ1,Y,Unused PV4 current 0.,Confirmed,0.01 A,R,"Yes — planned, read-only",PV4 Current,sensor.pv4_current
+39118,Total PV power,Related newer Fox maps; PQ1,Y,1.287 kW matched approximate sum of active strings.,Confirmed,0.001 kW,R,"Yes — planned, read-only",PV Power,sensor.pv_power_now
+39123,Grid R voltage,Related newer Fox maps; PQ1,Y,242.5 V observed and plausible.,Strong,0.1 V,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 39123 (raw)
+Candidate: alternative Grid Voltage R","sensor.pq1_register_39123
+(proposed diagnostic keys)"
+39126,Grid R current,Related newer Fox maps; PQ1,Y,1.5 A observed and plausible.,Strong,0.1 A,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 39126 (raw)
+Candidate: alternative Inverter Current R","sensor.pq1_register_39126
+(proposed diagnostic keys)"
+39134,AC/grid power-related telemetry,Related newer Fox maps; PQ1,Y,Legal; 0.14 kW observed but exact semantic not controlled.,Probable,0.001 kW likely,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 39134 (raw)
+Candidate: newer total inverter power pair high word; 39135 readability pending","sensor.pq1_register_39134
+(proposed diagnostic keys)"
+39139,Grid frequency,Related newer Fox maps; PQ1,Y,49.91 Hz observed.,Confirmed,0.01 Hz,R,"Yes — planned, read-only",Grid Frequency,sensor.rfreq
+39141,Inverter temperature,Related newer Fox maps; PQ1,Y,27.5 °C observed and plausible.,Strong,0.1 °C,R,"Yes — planned, read-only",Inverter Temp,sensor.invtemp
+39168-39187,Extended telemetry block,KH9.9; PQ1 legal subset to verify,N,KH9.9 dump shows this area used; targeted PQ1 semantics not yet established.,Unknown,Mixed/unknown,R,No — deferred / unresolved,None in PR1,—
+39204-39205,Paired power telemetry,KH9.9; PQ1,Y,Legal/readable on PQ1; no controlled semantic correlation.,Unknown,Likely 32-bit pair,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 39204 (raw)
+PQ1 Register 39205 (raw)
+Candidate: EPS Current R on newer models; not power","sensor.pq1_register_39204
+sensor.pq1_register_39205
+(proposed diagnostic keys)"
+39216-39217,Paired power telemetry,KH9.9; PQ1,Y,Legal/readable; unknown semantic.,Unknown,Likely 32-bit pair,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 39216 (raw)
+PQ1 Register 39217 (raw)
+Candidate: EPS Power T on newer models; PQ1 is single-phase","sensor.pq1_register_39216
+sensor.pq1_register_39217
+(proposed diagnostic keys)"
+39225-39226,Paired power telemetry,KH9.9; PQ1,Y,Legal/readable; unknown semantic.,Unknown,Likely 32-bit pair,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 39225 (raw)
+PQ1 Register 39226 (raw)
+Candidate: total Load Power","sensor.pq1_register_39225
+sensor.pq1_register_39226
+(proposed diagnostic keys)"
+39237-39238,Battery/power telemetry on newer maps,KH9.9; EVO/newer Fox; PQ1,Y,Legal/readable; candidate battery/inverter power but not controlled.,Probable,Likely signed 32-bit; 0.001 kW,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 39237 (raw)
+PQ1 Register 39238 (raw)
+Candidate: aggregate Inverter Battery Power","sensor.pq1_register_39237
+sensor.pq1_register_39238
+(proposed diagnostic keys)"
+39248-39249,Paired power telemetry,KH9.9; PQ1,Y,Legal/readable; unknown semantic.,Unknown,Likely 32-bit pair,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 39248 (raw)
+PQ1 Register 39249 (raw)
+Candidate: Inverter Power R","sensor.pq1_register_39248
+sensor.pq1_register_39249
+(proposed diagnostic keys)"
+39256-39257,Paired power telemetry,KH9.9; PQ1,Y,Legal/readable; unknown semantic.,Unknown,Likely 32-bit pair,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 39256 (raw)
+PQ1 Register 39257 (raw)
+Candidate: Inverter Power Reactive R","sensor.pq1_register_39256
+sensor.pq1_register_39257
+(proposed diagnostic keys)"
+39270-39271,Paired telemetry,KH9.9; PQ1,Y,Legal/readable; unknown semantic.,Unknown,Likely 32-bit pair,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 39270 (raw)
+PQ1 Register 39271 (raw)
+Candidate: paired telemetry used by KH; semantic unresolved","sensor.pq1_register_39270
+sensor.pq1_register_39271
+(proposed diagnostic keys)"
+39279-39280,PV1 power,Newer KH; H3-Pro/Smart; EVO; PQ1,Y,39280 tracked PV1 power; paired representation needs confirmation on PQ1.,Confirmed semantic / width Strong,Likely 32-bit pair; W,R,Yes — experimental read-only; validate confirm 16/32-bit width and word order,PV1 Power,sensor.pv1_power
+39281-39282,PV2 power,Newer KH; H3-Pro/Smart; EVO; PQ1,Y,39282 tracked PV2 power.,Confirmed semantic / width Strong,Likely 32-bit pair; W,R,Yes — experimental read-only; validate confirm 16/32-bit width and word order,PV2 Power,sensor.pv2_power
+39283-39284,PV3 power,Newer KH; H3-Pro/Smart; PQ1,Y,39284 ~395 W after PV3 connection.,Confirmed semantic / width Strong,Likely 32-bit pair; W,R,Yes — experimental read-only; validate confirm 16/32-bit width and word order,PV3 Power,sensor.pv3_power
+39285-39286,PV4 power,Newer KH; H3-Pro/Smart; PQ1,Y,39286 0 W on unused PV4.,Confirmed semantic / width Strong,Likely 32-bit pair; W,R,Yes — experimental read-only; validate confirm 16/32-bit width and word order,PV4 Power,sensor.pv4_power
+41000,Work mode,H1/H1-G2; P1; H3/KH families; PQ1,Y,"With scheduler off, reads 0 in Self Use. FC06 write value 1 acknowledged but visible mode/readback stayed Self Use/0; asymmetric write map remains possible.",Confirmed as Manual Work Mode read; write semantics unresolved,U16 enum; PQ1 read map at least 0=Self Use,R,Yes — planned read-only; label only confirmed mode values,Manual Work Mode,sensor.manual_work_mode (proposed new key)
+41007,Maximum battery charge current,H1/H3/KH/P1 families; PQ1,Y,500 = 50.0 A; PQ1 manual states 50 A standard/max charge current.,Confirmed,0.1 A,R,"Yes — planned, read-only",Max Charge Current,sensor.max_charge_current
+41008,Maximum battery discharge current,H1/H3/KH/P1 families; PQ1,Y,500 = 50.0 A; matches manual.,Confirmed,0.1 A,R,"Yes — planned, read-only",Max Discharge Current,sensor.max_discharge_current
+41009,Minimum SOC,H1/H3/KH/P1 families; PQ1,Y,10 matched Fox app System Min SOC.,Confirmed,%,R,"Yes — planned, read-only",Min SoC,sensor.min_soc
+41010,Maximum SOC,Newer Fox families; PQ1,Y,100 matched Fox app System Max SOC.,Confirmed,%,R,"Yes — planned, read-only",Max SoC,sensor.max_soc
+41011,Grid minimum SOC,H1/H3/KH/P1 families; PQ1,Y,10 matched configured Grid Min SOC.,Confirmed,%,R,"Yes — planned, read-only",Min SoC (On Grid),sensor.min_soc_on_grid
+44000,Legacy Remote Power Control Enable on H1/H3/KH; PQ1 may instead use an expanded enum/bitfield,H1; H3/AC3; KH; PQ1,Y,"PQ1 legal/readable. Observed 0 before/around firmware work and later 12 (0x000C; bits 2 and 3 set). Older H1/H3/KH normally use simple enable values such as 0/1. No PQ1 test has tied individual bits to Cloud, LAN, RS485, scheduler, or another control source.",Unknown; bitfield hypothesis to test,"U16; legacy models use enable/enum, PQ1 encoding unknown",R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 44000 (raw)
+Candidate: remote-control state; retain raw 12, never Boolean","sensor.pq1_register_44000
+(proposed diagnostic keys)"
+44001,Legacy Remote Power Control watchdog/timeout,H1; H3/AC3; KH; PQ1,Y,PQ1 legal/readable; firmware update changed 0→60. A value of 60 is consistent with the 60-second remote-control timeout used on other Fox models.,Strong candidate,"U16, likely seconds",R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 44001 (raw)
+Candidate: remote-control timeout/watchdog","sensor.pq1_register_44001
+(proposed diagnostic keys)"
+44002,Legacy Remote Power Control active-power command/state,H1; H3/AC3; KH; PQ1,Y,"PQ1 legal/readable and observed as 0. Zero is consistent with no active remote-power command, but no controlled PQ1 remote-control test has confirmed it.",Strong candidate,Likely signed power value; exact PQ1 scaling/width not confirmed,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 44002 (raw)
+Candidate: remote active-power command/state; width unresolved","sensor.pq1_register_44002
+(proposed diagnostic keys)"
+46501-46502,Import Power Limit,KH9.9/current newer Fox map; PQ1 candidate,N,KH9.9 foxess_modbus actively polls this two-register pair. PQ1 semantics have not yet been correlated. Particularly relevant because PQ1 schedules expose per-period import limits.,Candidate,"I32, W (candidate newer-Fox encoding)",R (test read-only),No — deferred / unresolved,None in PR1,—
+46607,Maximum charge current (newer duplicate map),Newer Fox families; PQ1,Y,500 exactly duplicates 41007.,Strong,0.1 A,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 46607 (raw)
+Candidate: duplicate Max Charge Current","sensor.pq1_register_46607
+(proposed diagnostic keys)"
+46608,Maximum discharge current (newer duplicate map),Newer Fox families; PQ1,Y,500 exactly duplicates 41008.,Strong,0.1 A,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 46608 (raw)
+Candidate: duplicate Max Discharge Current","sensor.pq1_register_46608
+(proposed diagnostic keys)"
+46609,Minimum SOC (newer duplicate map),Newer Fox families; PQ1,Y,10 exactly duplicates 41009.,Strong,%,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 46609 (raw)
+Candidate: duplicate Min SoC","sensor.pq1_register_46609
+(proposed diagnostic keys)"
+46610,Maximum SOC (newer duplicate map),Newer Fox families; PQ1,Y,100 exactly duplicates 41010.,Strong,%,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 46610 (raw)
+Candidate: duplicate Max SoC","sensor.pq1_register_46610
+(proposed diagnostic keys)"
+46611,Grid minimum SOC (newer duplicate map),Newer Fox families; PQ1,Y,10 exactly duplicates 41011.,Strong,%,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 46611 (raw)
+Candidate: duplicate Min SoC On Grid","sensor.pq1_register_46611
+(proposed diagnostic keys)"
+46616-46617,Global export power limit,KH/newer Fox incl. H3-Smart/H3-Pro work; PQ1,Y,"Read [0,15000], exactly matching installer-set 15 kW global export limit.",Strong; controlled setting change still required for Confirmed,U32; W,R,Yes — experimental read-only; validate with controlled limit change,Export Power Limit (candidate),sensor.export_power_limit
+46618-46619,Configuration values,Newer Fox maps; PQ1,Y,Legal; values around 630; no semantic correlation.,Unknown,Unknown,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 46618 (raw)
+PQ1 Register 46619 (raw)
+Candidate: newer configuration values; semantic unresolved","sensor.pq1_register_46618
+sensor.pq1_register_46619
+(proposed diagnostic keys)"
+48000,Mode Scheduler enable,H3-Smart/H3-Pro scheduler architecture; PQ1,Y,Controlled Scheduler ON/OFF changed 1↔0. FC06/FC16 LAN write attempts did not change state.,Confirmed,"U16 boolean: 0=off, 1=on",R,"Yes — planned, read-only",Scheduler Enabled,binary_sensor.scheduler_enabled (proposed new key)
+48010 + 10n,Scheduler record populated/valid flag,H3-Smart/H3-Pro scheduler architecture; PQ1,Y,2→3 schedule experiment showed contiguous flags; final populated record is Remaining Time.,Confirmed,U16 boolean/flag,R,Yes — raw diagnostic capture for testing; semantic scheduler parsing remains PR3,"PQ1 Scheduler Registers (raw snapshot attributes; on-demand, not 970 polling entities)",sensor.pq1_scheduler_registers (proposed shared diagnostic snapshot; record fields remain raw)
+48011 + 10n,Schedule start time,H3-Smart/H3-Pro scheduler architecture; PQ1,Y,Controlled time changes; records reorder chronologically.,Confirmed,Packed time: (hour<<8)|minute,R,Yes — raw diagnostic capture for testing; semantic scheduler parsing remains PR3,"PQ1 Scheduler Registers (raw snapshot attributes; on-demand, not 970 polling entities)",sensor.pq1_scheduler_registers (proposed shared diagnostic snapshot; record fields remain raw)
+48012 + 10n,Schedule end time,H3-Smart/H3-Pro scheduler architecture; PQ1,Y,05:30→05:31 and other controlled changes tracked exactly.,Confirmed,Packed time: (hour<<8)|minute,R,Yes — raw diagnostic capture for testing; semantic scheduler parsing remains PR3,"PQ1 Scheduler Registers (raw snapshot attributes; on-demand, not 970 polling entities)",sensor.pq1_scheduler_registers (proposed shared diagnostic snapshot; record fields remain raw)
+48013 + 10n,Scheduler work mode,H3-Smart/H3-Pro scheduler architecture; PQ1,Y,"Controlled tests mapped 1 Self Use, 2 Feed-in Priority, 3 Backup, 6 Forced Charge, 7 Forced Discharge.",Confirmed,U16 enum,R,Yes — raw diagnostic capture for testing; semantic scheduler parsing remains PR3,"PQ1 Scheduler Registers (raw snapshot attributes; on-demand, not 970 polling entities)",sensor.pq1_scheduler_registers (proposed shared diagnostic snapshot; record fields remain raw)
+48014 + 10n,Packed Max/Min SOC,H3-Smart/H3-Pro scheduler architecture; PQ1,Y,0x640A = 100/10; controlled 99/11 produced 0x630B.,Confirmed,High byte=max SOC; low byte=min SOC,R,Yes — raw diagnostic capture for testing; semantic scheduler parsing remains PR3,"PQ1 Scheduler Registers (raw snapshot attributes; on-demand, not 970 polling entities)",sensor.pq1_scheduler_registers (proposed shared diagnostic snapshot; record fields remain raw)
+48015 + 10n,Cutoff SOC / mode-specific SOC,H3-Smart/H3-Pro scheduler architecture; PQ1,Y,Controlled cutoff 100→90 changed corresponding registers.,Confirmed,%,R,Yes — raw diagnostic capture for testing; semantic scheduler parsing remains PR3,"PQ1 Scheduler Registers (raw snapshot attributes; on-demand, not 970 polling entities)",sensor.pq1_scheduler_registers (proposed shared diagnostic snapshot; record fields remain raw)
+48016 + 10n,Mode-specific charge/discharge power,H3-Smart/H3-Pro scheduler architecture; PQ1,Y,8000→7125 tracked; disabling grid charge made field 0.,Confirmed,W,R,Yes — raw diagnostic capture for testing; semantic scheduler parsing remains PR3,"PQ1 Scheduler Registers (raw snapshot attributes; on-demand, not 970 polling entities)",sensor.pq1_scheduler_registers (proposed shared diagnostic snapshot; record fields remain raw)
+48017 + 10n,Scheduler record field +7; individual semantic meaning unresolved,H3-Smart scheduler structure; PQ1,Y,"Confirmed as part of PQ1's repeating 10-register scheduler record structure. It repeats with each schedule/Remaining Time record and participates in observed scheduler-state patterns, but no controlled test has uniquely identified its semantic meaning.",Structurally confirmed; semantic meaning unknown,U16/raw field; encoding unknown,R,Yes — raw diagnostic capture for testing; semantic scheduler parsing remains PR3,"PQ1 Scheduler Registers (raw snapshot attributes; on-demand, not 970 polling entities)",sensor.pq1_scheduler_registers (proposed shared diagnostic snapshot; record fields remain raw)
+48018 + 10n,Scheduler record field +8; individual semantic meaning unresolved,H3-Smart scheduler structure; PQ1,Y,"Confirmed as part of PQ1's repeating 10-register scheduler record structure. Controlled PQ1 testing observed 1→3 changes when an after-cutoff selection was changed, but the field's general semantic meaning is not yet established.",Structurally confirmed; semantic meaning unknown; controlled changes observed,U16/raw field; encoding unknown,R,Yes — raw diagnostic capture for testing; semantic scheduler parsing remains PR3,"PQ1 Scheduler Registers (raw snapshot attributes; on-demand, not 970 polling entities)",sensor.pq1_scheduler_registers (proposed shared diagnostic snapshot; record fields remain raw)
+48019 + 10n,Scheduler record field +9; individual semantic meaning unresolved,H3-Smart scheduler structure; PQ1,Y,Confirmed as part of PQ1's repeating 10-register scheduler record structure. It repeats with each schedule/Remaining Time record; no controlled test has yet established its individual semantic meaning.,Structurally confirmed; semantic meaning unknown,U16/raw field; encoding unknown,R,Yes — raw diagnostic capture for testing; semantic scheduler parsing remains PR3,"PQ1 Scheduler Registers (raw snapshot attributes; on-demand, not 970 polling entities)",sensor.pq1_scheduler_registers (proposed shared diagnostic snapshot; record fields remain raw)
+48000-48969,Scheduler/working/shadow register banks,Newer Fox scheduler architecture; PQ1,Y,V6.1 read all 970 registers successfully. Repeated +80 copies observed; purpose unresolved.,Mostly Unknown,U16 array / structured records,R,Yes — raw diagnostic capture for testing; semantic scheduler parsing remains PR3,"PQ1 Scheduler Registers (raw snapshot attributes; on-demand, not 970 polling entities)",sensor.pq1_scheduler_registers (proposed shared diagnostic snapshot; record fields remain raw)
+49001,Unknown dynamic value,PQ1; possible newer Fox internal map,N,Changed 61796→61962→62272 independently of controlled schedule export setting.,Unknown,U16,R,No — deferred / unresolved,None in PR1,—
+49007,Unknown,PQ1; possible newer Fox internal map,N,Legal; value 1000 observed.,Unknown,U16,R,No — deferred / unresolved,None in PR1,—
+49137,Unknown; possible duplicate global export-limit representation,PQ1; possible newer Fox internal map,N,"Value 15000 observed, matching global export limit, but no controlled change test.",Probable relationship only,Raw/U16 or part of wider field,R,No — deferred / unresolved,None in PR1,—
+49203,Work Mode on EVO/newer architecture,EVO; newer-map PRs; PQ1,Y,Legal/readable on PQ1 but no controlled correlation with PQ1 manual mode.,Unknown for PQ1,U16 enum on EVO; PQ1 unknown,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 49203 (raw)
+Candidate: newer manual work-mode enum; compare with 41000","sensor.pq1_register_49203
+(proposed diagnostic keys)"
+49226-49227,Internal clock/time fields,PQ1; possible newer Fox internal map,N,Changed with elapsed time during V6.2 experiments.,Strong as time-related; exact field split not fully proven,U16 fields,R,No — deferred / unresolved,None in PR1,—
+37633-37700,Extended BMS data block on newer Fox models,H3-Pro; possibly other newer Fox families; PQ1 candidate,N,Not yet characterised on PQ1. Adjacent 376xx BMS registers through 37632 are legal and correlate strongly with PQ1 battery data.,Candidate,Mixed/unknown; likely U16/S16 and model-specific scaling,R (test read-only),No — deferred / unresolved,None in PR1,—
+39078-39081,PV5/PV6 voltage and current on six-MPPT models,H3-Pro; PQ1 candidate,N,PQ1 has four physical PV inputs; these addresses have not been established as meaningful on PQ1.,Candidate / likely not applicable,Likely voltage ×0.1 V and current scaling matching adjacent PV registers,R (test read-only),No — deferred / unresolved,None in PR1,—
+39134-39135,Total inverter power (32-bit pair on newer Fox maps),H3-Pro; H3-Smart; EVO; PQ1,Y,39134 is legal and previously produced a plausible live power value (~0.14 kW). Pair width/word order with 39135 not yet validated.,Strong semantic; format not confirmed,"Candidate 32-bit pair [39135,39134], likely ×0.001 kW",R,Partial — include raw 39134; confirm 39135 readability before pair decoding,PQ1 Register 39134 (raw); same entity as single-register row,sensor.pq1_register_39134 (proposed)
+39250-39251,Inverter power phase S on three-phase newer Fox maps,H3-Pro; H3-Smart; PQ1 candidate,N,"Not yet correlated. PQ1 is single-phase, so these may be zero/reserved even if legal.",Candidate / likely not applicable,Candidate signed 32-bit power pair,R (test read-only),No — deferred / unresolved,None in PR1,—
+39252-39253,Inverter power phase T on three-phase newer Fox maps,H3-Pro; H3-Smart; PQ1 candidate,N,"Not yet correlated. PQ1 is single-phase, so these may be zero/reserved even if legal.",Candidate / likely not applicable,Candidate signed 32-bit power pair,R (test read-only),No — deferred / unresolved,None in PR1,—
+39287-39290,PV5/PV6 power on six-MPPT models,H3-Pro; PQ1 candidate,N,PQ1 has four physical PV inputs; not yet established as meaningful on PQ1.,Candidate / likely not applicable,Candidate 32-bit PV power pairs,R (test read-only),No — deferred / unresolved,None in PR1,—
+46001,Newer remote-control enable,KH/newer firmware; H3-Smart/EVO-style control architecture; PQ1 candidate,N,Not yet characterised on PQ1. Candidate newer equivalent/alternative to legacy 44000.,Candidate,U16 enum/enable flag,R (test read-only),No — deferred / unresolved,None in PR1,—
+46002,Newer remote-control timeout,KH/newer firmware; H3-Smart/EVO-style control architecture; PQ1 candidate,N,Not yet characterised on PQ1. Candidate newer equivalent/alternative to 44001.,Candidate,Likely seconds/U16,R (test read-only),No — deferred / unresolved,None in PR1,—
+46003-46004,Newer remote active-power command/state,KH/newer firmware; H3-Smart/EVO-style control architecture; PQ1 candidate,N,Not yet characterised on PQ1. Could reveal newer control structure distinct from 44002.,Candidate,Candidate signed 32-bit power pair,R (test read-only),No — deferred / unresolved,None in PR1,—
+46018-46019,Newer remote battery-power limit/control field,EVO/newer remote-control architecture; PQ1 candidate,N,Not yet characterised on PQ1. Candidate forced-charge/discharge related control field.,Candidate,Candidate signed/unsigned 32-bit power pair,R (test read-only),No — deferred / unresolved,None in PR1,—
+46600-46606,Newer configuration block preceding confirmed PQ1 battery settings,KH/H3-Smart/H3-Pro/newer Fox families; PQ1 candidate,N,"Not yet semantically characterised on PQ1; 46607-46611 and 46616-46619 are already legal, making surrounding block worth targeted reads.",Unknown,Unknown,R (test read-only),No — deferred / unresolved,None in PR1,—
+46612-46615,Newer configuration block between confirmed SOC settings and export limit,KH/H3-Smart/H3-Pro/newer Fox families; PQ1 candidate,N,Not yet semantically characterised on PQ1; adjacent 46607-46611 and 46616-46617 are meaningful/legal.,Unknown,Unknown,R (test read-only),No — deferred / unresolved,None in PR1,—
+46620-46630,Newer configuration block following export-limit area,KH/H3-Smart/H3-Pro/newer Fox families; PQ1 candidate,N,Not yet semantically characterised on PQ1. Candidate settings/configuration extension.,Unknown,Unknown,R (test read-only),No — deferred / unresolved,None in PR1,—
+46503,Threshold SOC,Newer Fox register map; PQ1 candidate,N,Not yet tested/correlated on PQ1. Adjacent to 46501-02 Import Power Limit and 46504-05 Export Power Limit in newer Fox mapping.,Candidate,"U16, %",R (test read-only),No — deferred / unresolved,None in PR1,—
+46504-46505,Export Power Limit,Newer Fox register map; PQ1 candidate,N,"Not yet tested/correlated on PQ1. Candidate active/per-period export limit, distinct from PQ1 46616-17 = 15000 which strongly matches the installer/global export limit.",Candidate,"I32, W (candidate newer-Fox encoding)",R (test read-only),No — deferred / unresolved,None in PR1,—
+37700,BMS 2 connection state,H3-Pro; H3-Smart; PQ1 candidate,N,"Current foxess_modbus uses this as the second BMS connection-state register. PQ1 has a multi-module battery stack, so a second BMS/channel architecture is relevant but untested.",Candidate,U16 state,R (test read-only),No — deferred / unresolved,None in PR1,—
+38307,BMS 2 battery voltage,H3-Pro; H3-Smart; PQ1 candidate,N,Second BMS channel in current foxess_modbus; untested on PQ1.,Candidate,×0.1 V,R (test read-only),No — deferred / unresolved,None in PR1,—
+38308,BMS 2 battery current,H3-Pro; H3-Smart; PQ1 candidate,N,Second BMS channel in current foxess_modbus; untested on PQ1.,Candidate,current scaling to validate,R (test read-only),No — deferred / unresolved,None in PR1,—
+38309,BMS 2 battery temperature,H3-Pro; H3-Smart; PQ1 candidate,N,Second BMS channel in current foxess_modbus; untested on PQ1.,Candidate,×0.1 °C,R (test read-only),No — deferred / unresolved,None in PR1,—
+38310,BMS 2 SOC,H3-Pro; H3-Smart; PQ1 candidate,N,Second BMS channel in current foxess_modbus; untested on PQ1.,Candidate,%,R (test read-only),No — deferred / unresolved,None in PR1,—
+38315-38316,BMS 2 cell temperature high/low,H3-Pro; H3-Smart; PQ1 candidate,N,Second BMS channel in current foxess_modbus; untested on PQ1.,Candidate,×0.1 °C,R (test read-only),No — deferred / unresolved,None in PR1,—
+38317-38318,BMS 2 cell voltage high/low,H3-Pro; H3-Smart; PQ1 candidate,N,Second BMS channel in current foxess_modbus; untested on PQ1.,Candidate,mV,R (test read-only),No — deferred / unresolved,None in PR1,—
+38322,BMS 2 state of health,H3-Smart; PQ1 candidate,N,Current foxess_modbus exposes BMS2 SoH on H3-Smart; untested on PQ1.,Candidate,%,R (test read-only),No — deferred / unresolved,None in PR1,—
+38330,BMS 2 energy remaining,H3-Pro; H3-Smart; PQ1 candidate,N,Current foxess_modbus exposes BMS2 remaining energy; particularly relevant to PQ1 multi-battery stack.,Candidate,×0.01 kWh,R (test read-only),No — deferred / unresolved,None in PR1,—
+38814-38815,Grid CT combined active power,H3-Pro; H3-Smart; PQ1 candidate,N,Current newer-model grid CT map; untested on PQ1.,Candidate,I32; ×0.0001 kW,R (test read-only),No — deferred / unresolved,None in PR1,—
+38816-38821,Grid CT R/S/T active power,H3-Pro; H3-Smart; PQ1 candidate,N,Per-phase grid CT map; PQ1 is single-phase but R/combined may be useful.,Candidate,I32; ×0.0001 kW,R (test read-only),No — deferred / unresolved,None in PR1,—
+38914-38915,CT2/Meter 2 combined active power,H3-Pro; H3-Smart; PQ1 candidate,N,Current foxess_modbus explicitly exposes CT2 Meter combined power. Relevant to possible separate EV consumer-unit metering if PQ1 hardware supports CT2.,Candidate,I32; ×0.0001 kW,R (test read-only),No — deferred / unresolved,None in PR1,—
+38916-38921,CT2/Meter 2 R/S/T active power,H3-Pro; H3-Smart; PQ1 candidate,N,Current foxess_modbus exposes CT2 per-phase power. PQ1 single-phase would most likely use combined/R if supported.,Candidate,I32; ×0.0001 kW,R (test read-only),No — deferred / unresolved,None in PR1,—
+39219-39224,Load Power R/S/T,H3-Pro; H3-Smart; PQ1 candidate,N,Current foxess_modbus uses three 32-bit phase pairs. PQ1 single-phase may expose only R or use total at 39225-26.,Candidate,I32; ×0.001 kW,R (test read-only),No — deferred / unresolved,None in PR1,—
+39225-39226,Total Load Power,H3-Pro; H3-Smart; EVO; PQ1,Y,Legal on PQ1 from KH-style probing; current foxess_modbus identifies this pair as total Load Power on newer models. Needs PQ1 correlation.,Strong candidate,I32; ×0.001 kW,R,Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 39225 (raw)
+PQ1 Register 39226 (raw)
+Candidate: total Load Power; same diagnostic entities as earlier duplicate row","sensor.pq1_register_39225
+sensor.pq1_register_39226
+(proposed diagnostic keys)"
+39227,Inverter Battery 1 voltage,H3-Pro; H3-Smart; EVO; PQ1 candidate,N,Current foxess_modbus battery-channel 1 voltage; untested on PQ1.,Candidate,×0.1 V,R (test read-only),No — deferred / unresolved,None in PR1,—
+39228-39229,Inverter Battery 1 current,H3-Pro; H3-Smart; EVO; PQ1 candidate,N,Current foxess_modbus battery-channel 1 current; untested on PQ1.,Candidate,I32; ×0.001 A,R (test read-only),No — deferred / unresolved,None in PR1,—
+39230-39231,Inverter Battery 1 power,H3-Pro; H3-Smart; EVO; PQ1 candidate,N,Current foxess_modbus battery-channel 1 power; untested on PQ1.,Candidate,I32; ×0.001 kW,R (test read-only),No — deferred / unresolved,None in PR1,—
+39232,Inverter Battery 2 voltage,H3-Pro; H3-Smart; PQ1 candidate,N,Current foxess_modbus battery-channel 2 voltage; relevant to multi-channel battery architecture.,Candidate,×0.1 V,R (test read-only),No — deferred / unresolved,None in PR1,—
+39233-39234,Inverter Battery 2 current,H3-Pro; H3-Smart; PQ1 candidate,N,Current foxess_modbus battery-channel 2 current; relevant to multi-channel battery architecture.,Candidate,I32; ×0.001 A,R (test read-only),No — deferred / unresolved,None in PR1,—
+39235-39236,Inverter Battery 2 power,H3-Pro; H3-Smart; PQ1 candidate,N,Current foxess_modbus battery-channel 2 power; relevant to multi-channel battery architecture.,Candidate,I32; ×0.001 kW,R (test read-only),No — deferred / unresolved,None in PR1,—
+39237-39238,Aggregate inverter battery power,H3-Pro; H3-Smart; EVO; PQ1,Y,Current foxess_modbus uses this pair as aggregate inverter battery power and remote-control feedback. PQ1 legality/value correlation still to confirm.,Strong candidate,I32; ×0.001 kW,R (test read-only),Yes — experimental read-only; PQ1 meaning unverified,"PQ1 Register 39237 (raw)
+PQ1 Register 39238 (raw)
+Candidate: aggregate battery power; same diagnostic entities as earlier duplicate row","sensor.pq1_register_39237
+sensor.pq1_register_39238
+(proposed diagnostic keys)"
+39601-39604,Solar energy total / today,H3-Pro; H3-Smart; EVO; PQ1 candidate,N,"Newer Fox 32-bit energy map: total at 39601-02, today at 39603-04. PQ1 already has 320xx energy map; test whether this is an alternate/newer mirror.",Candidate,U32; ×0.01 kWh on current newer models,R (test read-only),No — deferred / unresolved,None in PR1,—
+39605-39608,Battery charge energy total / today,H3-Pro; H3-Smart; EVO; PQ1 candidate,N,Newer Fox energy map; compare with PQ1 320xx counters.,Candidate,U32; ×0.01 kWh,R (test read-only),No — deferred / unresolved,None in PR1,—
+39609-39612,Battery discharge energy total / today,H3-Pro; H3-Smart; EVO; PQ1 candidate,N,Newer Fox energy map; compare with PQ1 320xx counters.,Candidate,U32; ×0.01 kWh,R (test read-only),No — deferred / unresolved,None in PR1,—
+39613-39616,Feed-in energy total / today,H3-Pro; H3-Smart; EVO; PQ1 candidate,N,Newer Fox energy map; compare with PQ1 320xx counters.,Candidate,U32; ×0.01 kWh,R (test read-only),No — deferred / unresolved,None in PR1,—
+39617-39620,Grid consumption energy total / today,H3-Pro; H3-Smart; EVO; PQ1 candidate,N,Newer Fox energy map; compare with PQ1 320xx counters.,Candidate,U32; ×0.01 kWh,R (test read-only),No — deferred / unresolved,None in PR1,—
+39621-39624,Yield energy total / today,H3-Pro; H3-Smart; EVO; PQ1 candidate,N,Newer Fox energy map; compare with PQ1 320xx counters.,Candidate,U32; ×0.01 kWh,R (test read-only),No — deferred / unresolved,None in PR1,—
+39625-39628,Input energy total / today,H3-Pro; H3-Smart; EVO; PQ1 candidate,N,Newer Fox energy map; compare with PQ1 320xx counters.,Candidate,U32; ×0.01 kWh,R (test read-only),No — deferred / unresolved,None in PR1,—
+39629-39632,Load energy total / today,H3-Pro; H3-Smart; EVO; PQ1 candidate,N,Newer Fox energy map; compare with PQ1 320xx counters.,Candidate,U32; ×0.01 kWh,R (test read-only),No — deferred / unresolved,None in PR1,—
+44003,High word of H3 legacy Remote Active Power,H3 legacy remote-control architecture; PQ1 candidate,N,"H3 uses [44003,44002] as a 32-bit active-power command; H1/KH use only 44002. PQ1 has only been examined as 44002=0 so far.",Candidate,I32 pair with 44002 on H3,R (test read-only),No — deferred / unresolved,None in PR1,—
