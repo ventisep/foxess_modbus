@@ -405,7 +405,10 @@
     "key": "manual_work_mode",
     "name": "Manual Work Mode",
     "options_map": {
-      "0": "Self Use"
+      "0": "Self Use",
+      "1": "Feed-in Priority",
+      "2": "Backup",
+      "3": "Peak Shaving"
     },
     "type": "enum-sensor"
   },

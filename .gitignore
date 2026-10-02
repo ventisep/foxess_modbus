@@ -4,3 +4,11 @@ __pycache__
 config/*
 !config/configuration.yaml
 AGENTS.md
+custom_components/foxess_modbus.zip
+docs/FoxESS_PQ1_Register_Mapping_and_Test_Plan_EXHAUSTIVE_SOURCE_PASS.xlsx
+docs/PQ1_DEVELOPMENT_NOTES.md
+docs/PQ1_PV_POWER_CONFIRMATION.yaml
+docs/PQ1_REGISTERS_CONFIRMED.csv
+docs/PQ1_REGISTERS_DISCOUNTED.csv
+docs/PQ1_REGISTERS_TO_CONFIRM.csv
+docs/FoxESS_PQ1_Register_Mapping_and_Test_Plan_EXHAUSTIVE_SOURCE_PASS.xlsx

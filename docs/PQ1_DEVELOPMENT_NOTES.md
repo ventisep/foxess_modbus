@@ -200,10 +200,13 @@ installer limit until tested.
 `48000` is confirmed Scheduler Enabled: 1 ON, 0 OFF. Turning it off
 retains records.
 
-Records begin at `48010`, stride 10. `+0` is populated/valid. Iterate
-while populated. Records sort dynamically by start time; they are not
-stable IDs. The **last populated record is Remaining Time**; preceding
-records are schedules.
+Records begin at `48010`, stride 10. Records use a stride of 10 and may
+contain inactive slots: `+0 = 0` does not terminate the scan. Continue
+reading subsequent records, because later active records can follow an
+inactive one. Records sort dynamically by start time; they are not stable
+IDs. The **full-day record** with start `00:00` and end `23:59` is the
+Remaining Time record; preceding records are schedules. Stop after that
+record rather than at the first inactive slot.
 
 | Offset | Meaning                     | Status                                                             |
 | ------ | --------------------------- | ------------------------------------------------------------------ |

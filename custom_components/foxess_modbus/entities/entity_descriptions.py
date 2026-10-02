@@ -2919,8 +2919,9 @@ def _pq1_entities() -> Iterable[EntityFactory]:
         key="manual_work_mode",
         address=[ModbusAddressSpec(holding=41000, models=Inv.PQ1)],
         name="Manual Work Mode",
-        # Other P1 values and scheduler values are not verified PQ1 manual modes.
-        options_map={0: "Self Use"},
+        # PQ1 exposes a zero-based manual-mode enum at 41000. Keep this
+        # separate from the one-based 49203 representation and scheduler enum.
+        options_map={0: "Self Use", 1: "Feed-in Priority", 2: "Backup", 3: "Peak Shaving"},
     )
     yield ModbusBinarySensorDescription(
         key="scheduler_enabled",

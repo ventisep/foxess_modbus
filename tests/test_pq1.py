@@ -241,7 +241,10 @@ def test_enum_serialization_does_not_mutate_mode_map(
     assert sensors["manual_work_mode"].native_value == "Self Use"
 
 
-@pytest.mark.parametrize(("value", "label"), [(0, "Self Use"), (1, None), (6, None), (12, None), (None, None)])
+@pytest.mark.parametrize(
+    ("value", "label"),
+    [(0, "Self Use"), (1, "Feed-in Priority"), (2, "Backup"), (3, "Peak Shaving"), (6, None), (12, None), (None, None)],
+)
 def test_manual_mode_preserves_unknown_codes(
     controller: ModbusController, sensors: dict[str, SensorEntity], value: int | None, label: str | None
 ) -> None:
