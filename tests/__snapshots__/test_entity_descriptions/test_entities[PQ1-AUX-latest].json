@@ -24,7 +24,6 @@
     "addresses": [
       32005
     ],
-    "experimental": true,
     "key": "battery_charge_today",
     "name": "Battery Charge Today",
     "scale": 0.1,
@@ -36,7 +35,6 @@
       32004,
       32003
     ],
-    "experimental": true,
     "key": "battery_charge_total",
     "name": "Battery Charge Total",
     "scale": 0.1,
@@ -57,7 +55,6 @@
     "addresses": [
       32008
     ],
-    "experimental": true,
     "key": "battery_discharge_today",
     "name": "Battery Discharge Today",
     "scale": 0.1,
@@ -69,7 +66,6 @@
       32007,
       32006
     ],
-    "experimental": true,
     "key": "battery_discharge_total",
     "name": "Battery Discharge Total",
     "scale": 0.1,
@@ -111,7 +107,6 @@
     "addresses": [
       37609
     ],
-    "experimental": true,
     "key": "batvolt",
     "name": "Battery Voltage",
     "scale": 0.1,
@@ -182,16 +177,6 @@
   },
   {
     "addresses": [
-      37632
-    ],
-    "key": "bms_kwh_remaining",
-    "name": "BMS kWh Remaining",
-    "scale": 0.01,
-    "signed": false,
-    "type": "sensor"
-  },
-  {
-    "addresses": [
       31010
     ],
     "key": "eps_rvolt",
@@ -214,12 +199,13 @@
   },
   {
     "addresses": [
-      31014
+      31050,
+      31049
     ],
     "experimental": true,
     "key": "feed_in",
     "name": "Feed-in",
-    "scale": 0.001,
+    "scale": -0.001,
     "signed": true,
     "type": "sensor"
   },
@@ -227,7 +213,6 @@
     "addresses": [
       32011
     ],
-    "experimental": true,
     "key": "feed_in_energy_today",
     "name": "Feed-in Today",
     "scale": 0.1,
@@ -239,7 +224,6 @@
       32010,
       32009
     ],
-    "experimental": true,
     "key": "feed_in_energy_total",
     "name": "Feed-in Total",
     "scale": 0.1,
@@ -248,12 +232,12 @@
   },
   {
     "addresses": [
-      31014
+      31050,
+      31049
     ],
-    "experimental": true,
     "key": "grid_consumption",
     "name": "Grid Consumption",
-    "scale": 0.001,
+    "scale": -0.001,
     "signed": true,
     "type": "sensor"
   },
@@ -261,7 +245,6 @@
     "addresses": [
       32014
     ],
-    "experimental": true,
     "key": "grid_consumption_energy_today",
     "name": "Grid Consumption Today",
     "scale": 0.1,
@@ -273,7 +256,6 @@
       32013,
       32012
     ],
-    "experimental": true,
     "key": "grid_consumption_energy_total",
     "name": "Grid Consumption Total",
     "scale": 0.1,
@@ -282,12 +264,12 @@
   },
   {
     "addresses": [
-      31014
+      31050,
+      31049
     ],
-    "experimental": true,
     "key": "grid_ct",
     "name": "Grid CT",
-    "scale": 0.001,
+    "scale": -0.001,
     "signed": true,
     "type": "sensor"
   },
@@ -316,9 +298,32 @@
   },
   {
     "addresses": [
-      31021
+      39249,
+      39248
     ],
     "experimental": true,
+    "key": "inv_power_39248",
+    "name": "Inverter Power (Register 39248)",
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39257,
+      39256
+    ],
+    "experimental": true,
+    "key": "inv_power_Q_R",
+    "name": "Inverter Power (Reactive) R",
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      31021
+    ],
     "key": "invbatcurrent",
     "name": "Inverter Battery Current",
     "scale": 0.1,
@@ -337,9 +342,19 @@
   },
   {
     "addresses": [
+      39238,
+      39237
+    ],
+    "key": "invbatpower_39237",
+    "name": "Inverter Battery (Register 39237) Power",
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
       31020
     ],
-    "experimental": true,
     "key": "invbatvolt",
     "name": "Inverter Battery Voltage",
     "scale": 0.1,
@@ -360,7 +375,6 @@
     "addresses": [
       32023
     ],
-    "experimental": true,
     "key": "load_energy_today",
     "name": "Load Energy Today",
     "scale": 0.1,
@@ -369,7 +383,8 @@
   },
   {
     "addresses": [
-      31016
+      39226,
+      39225
     ],
     "key": "load_power",
     "name": "Load Power",
@@ -379,10 +394,30 @@
   },
   {
     "addresses": [
+      31016
+    ],
+    "key": "load_power_31016",
+    "name": "Load Power (Register 31016)",
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      39135,
+      39134
+    ],
+    "key": "load_power_39134",
+    "name": "Load Power (Register 39134)",
+    "scale": 0.001,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
       32022,
       32021
     ],
-    "experimental": true,
     "key": "load_power_total",
     "name": "Load Energy Total",
     "scale": 0.1,
@@ -409,6 +444,20 @@
       "1": "Feed-in Priority",
       "2": "Backup",
       "3": "Peak Shaving"
+    },
+    "type": "enum-sensor"
+  },
+  {
+    "addresses": [
+      49203
+    ],
+    "key": "manual_work_mode_49203",
+    "name": "Manual Work Mode (Register 49203)",
+    "options_map": {
+      "1": "Self Use",
+      "2": "Feed-in Priority",
+      "3": "Backup",
+      "4": "Peak Shaving"
     },
     "type": "enum-sensor"
   },
@@ -493,6 +542,16 @@
   },
   {
     "addresses": [
+      31014
+    ],
+    "key": "pq1_register_31014",
+    "name": "PQ1 Register 31014 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
       31015
     ],
     "key": "pq1_register_31015",
@@ -553,6 +612,36 @@
   },
   {
     "addresses": [
+      32000
+    ],
+    "key": "pq1_register_32000",
+    "name": "PQ1 Register 32000 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      32001
+    ],
+    "key": "pq1_register_32001",
+    "name": "PQ1 Register 32001 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      32002
+    ],
+    "key": "pq1_register_32002",
+    "name": "PQ1 Register 32002 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
       37002
     ],
     "key": "pq1_register_37002",
@@ -567,6 +656,16 @@
     ],
     "key": "pq1_register_37611",
     "name": "PQ1 Register 37611 (Raw)",
+    "scale": null,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
+      37632
+    ],
+    "key": "pq1_register_37632",
+    "name": "PQ1 Register 37632 (Raw)",
     "scale": null,
     "signed": false,
     "type": "sensor"
@@ -915,11 +1014,10 @@
     "addresses": [
       39280
     ],
-    "experimental": true,
     "key": "pv1_power",
     "name": "PV1 Power",
     "scale": 0.001,
-    "signed": true,
+    "signed": false,
     "type": "sensor"
   },
   {
@@ -946,11 +1044,10 @@
     "addresses": [
       39282
     ],
-    "experimental": true,
     "key": "pv2_power",
     "name": "PV2 Power",
     "scale": 0.001,
-    "signed": true,
+    "signed": false,
     "type": "sensor"
   },
   {
@@ -977,11 +1074,10 @@
     "addresses": [
       39284
     ],
-    "experimental": true,
     "key": "pv3_power",
     "name": "PV3 Power",
     "scale": 0.001,
-    "signed": true,
+    "signed": false,
     "type": "sensor"
   },
   {
@@ -1008,11 +1104,10 @@
     "addresses": [
       39286
     ],
-    "experimental": true,
     "key": "pv4_power",
     "name": "PV4 Power",
     "scale": 0.001,
-    "signed": true,
+    "signed": false,
     "type": "sensor"
   },
   {
@@ -1026,14 +1121,15 @@
     "type": "sensor"
   },
   {
-    "addresses": [
-      39118
-    ],
     "key": "pv_power_now",
     "name": "PV Power",
-    "scale": 0.001,
-    "signed": true,
-    "type": "sensor"
+    "sources": [
+      "pv1_power",
+      "pv2_power",
+      "pv3_power",
+      "pv4_power"
+    ],
+    "type": "lambda"
   },
   {
     "addresses": [
@@ -1094,24 +1190,23 @@
   },
   {
     "addresses": [
-      32002
+      39604,
+      39603
     ],
-    "experimental": true,
     "key": "solar_energy_today",
     "name": "Solar Generation Today",
-    "scale": 0.1,
+    "scale": 0.01,
     "signed": false,
     "type": "sensor"
   },
   {
     "addresses": [
-      32001,
-      32000
+      39602,
+      39601
     ],
-    "experimental": true,
     "key": "solar_energy_total",
     "name": "Solar Generation Total",
-    "scale": 0.1,
+    "scale": 0.01,
     "signed": false,
     "type": "sensor"
   },
