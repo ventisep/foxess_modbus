@@ -97,17 +97,19 @@ async def test_reject_unrecognised_pq1_suffix() -> None:
     client.close.assert_awaited_once()
 
 
-def test_profile_and_read_only_entities(controller: ModbusController, sensors: dict[str, SensorEntity]) -> None:
+def test_profile_and_entities(controller: ModbusController, sensors: dict[str, SensorEntity]) -> None:
     profile = inverter_connection_type_profile_from_config(controller.inverter_details)
     assert profile is INVERTER_PROFILES[InverterModel.PQ1].connection_types[ConnectionType.AUX]
     assert profile.register_type == RegisterType.HOLDING
     assert profile.get_inv_for_version(None) == Inv.PQ1
     assert controller.inverter_capacity == 8000
     assert re.match(profile.inverter_model_profile.model_pattern, "P1-8.0-E") is None
-    assert controller.remote_control_manager is None
+    assert controller.remote_control_manager is not None
     assert controller.charge_periods == []
-    assert profile.create_entities(NumberEntity, controller) == []
-    assert profile.create_entities(SelectEntity, controller) == []
+    numbers = profile.create_entities(NumberEntity, controller)
+    selects = profile.create_entities(SelectEntity, controller)
+    assert {entity.entity_description.key for entity in numbers} == {"force_charge_power", "force_discharge_power"}
+    assert {entity.entity_description.key for entity in selects} == {"force_charge_mode"}
     assert not any(
         factory.depends_on_other_entities for factory in ENTITIES if factory.serialize(Inv.PQ1, RegisterType.HOLDING)
     )

@@ -9,6 +9,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 
 from .types import RegisterPollType
+from .types import RegisterType
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -121,6 +122,10 @@ class EntityController(ABC):
     @abstractmethod
     def remove_modbus_entity(self, listener: ModbusControllerEntity) -> None:
         """Removes a modbus entity from the ModbusController"""
+
+    @abstractmethod
+    async def read_registers(self, start_address: int, num_registers: int, register_type: RegisterType) -> list[int]:
+        """Read registers directly from the inverter, bypassing the entity cache."""
 
     @abstractmethod
     async def write_register(self, address: int, value: int) -> None:

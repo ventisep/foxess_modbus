@@ -4,6 +4,7 @@ from .common.entity_controller import EntityController
 from .common.entity_controller import EntityRemoteControlManager
 from .common.entity_controller import ModbusControllerEntity
 from .common.entity_controller import RemoteControlMode
+from .common.types import RegisterType
 from .entities.modbus_remote_control_config import ModbusRemoteControlAddressConfig
 from .entities.modbus_remote_control_config import WorkMode
 
@@ -284,12 +285,25 @@ class RemoteControlManager(EntityRemoteControlManager, ModbusControllerEntity):
                 await self._controller.write_register(self._addresses.work_mode, fallback_work_mode_value)
 
         if not self._remote_control_enabled:
-            self._remote_control_enabled = True
             timeout = self._poll_rate * 2
 
             # We can't do multi-register writes to these registers
             await self._controller.write_register(self._addresses.timeout_set, timeout)
-            await self._controller.write_register(self._addresses.remote_enable, 1)
+            await self._write_remote_enable(True)
+            self._remote_control_enabled = True
+
+    async def _write_remote_enable(self, enabled: bool) -> None:
+        mask = self._addresses.remote_enable_mask
+        if mask is None:
+            value = int(enabled)
+        else:
+            # A fresh read avoids overwriting target/direction changes made by the app.
+            # Modbus has no atomic bit update here; an external concurrent write can still race.
+            words = await self._controller.read_registers(self._addresses.remote_enable, 1, RegisterType.HOLDING)
+            if len(words) != 1 or not 0 <= words[0] <= 0xFFFF:
+                raise ValueError("Remote enable register is unavailable or invalid")
+            value = words[0] | mask if enabled else words[0] & (0xFFFF ^ mask)
+        await self._controller.write_register(self._addresses.remote_enable, value)
 
     async def _disable_remote_control(self, work_mode: WorkMode | None = None) -> None:
         # The strategy periods feature of the foxess app use the remote control register internally. If we disable
@@ -298,8 +312,8 @@ class RemoteControlManager(EntityRemoteControlManager, ModbusControllerEntity):
         # If we did have it enabled, but then restarted, then we just need to let the watchdog catch it.
 
         if self._remote_control_enabled:
+            await self._write_remote_enable(False)
             self._remote_control_enabled = False
-            await self._controller.write_register(self._addresses.remote_enable, 0)
 
         # This might not be available, e.g. on H1 LAN
         if (
