@@ -222,6 +222,9 @@ def test_profile_and_entities(controller: ModbusController, sensors: dict[str, S
     selects = profile.create_entities(SelectEntity, controller)
     assert {entity.entity_description.key for entity in numbers} == {"force_charge_power", "force_discharge_power"}
     assert {entity.entity_description.key for entity in selects} == {"force_charge_mode", "remote_control_target"}
+    target = next(entity for entity in selects if entity.entity_description.key == "remote_control_target")
+    assert target.entity_description.name == "Remote Control Power Target (Experimental)"
+    assert cast(ModbusControllerEntity, target).addresses == [46001]
     assert not any(
         factory.depends_on_other_entities for factory in ENTITIES if factory.serialize(Inv.PQ1, RegisterType.HOLDING)
     )
@@ -242,6 +245,8 @@ def test_profile_and_entities(controller: ModbusController, sensors: dict[str, S
     assert "bms_kwh_remaining" not in sensors
     assert "invbatpower_39248" not in sensors
     assert cast(ModbusControllerEntity, sensors["inv_power_39248"]).addresses == [39249, 39248]
+    assert cast(ModbusControllerEntity, sensors["inv_power"]).addresses == [39135, 39134]
+    assert "load_power_39134" not in sensors
     assert "pv1_energy_total" not in sensors
     assert "pv5_power" not in sensors
     assert "work_mode" not in sensors
@@ -309,7 +314,12 @@ async def test_poll_ranges_avoid_invalid_block(
         ("grid_ct", {31049: 65535, 31050: 25536}, 40),
         ("load_power", {39225: 0, 39226: 203}, 0.203),
         ("load_power", {39225: 0, 39226: 271}, 0.271),
-        ("load_power_39134", {39134: 0, 39135: 177}, 0.177),
+        ("inv_power", {39134: 0, 39135: 3422}, 3.422),
+        ("inv_power", {39134: 0, 39135: 1010}, 1.010),
+        ("inv_power", {39134: 0, 39135: 4920}, 4.920),
+        ("inv_power", {39134: 0, 39135: 1288}, 1.288),
+        # Import direction uses the existing shared S32 decoder; hardware test pending.
+        ("inv_power", {39134: 65535, 39135: 65036}, -0.500),
         ("load_power_31016", {31016: 200}, 0.2),
         ("invbatpower_39237", {39237: 65535, 39238: 65333}, -0.203),
         ("invbatpower_39237", {39237: 0, 39238: 570}, 0.570),
@@ -424,6 +434,7 @@ def test_experimental_settings_do_not_leak_to_p1(
         "load_power",
         "invbatpower_39237",
         "inv_power_39248",
+        "inv_power",
         "grid_ct",
         "grid_consumption",
         "battery_charge_total",
@@ -457,7 +468,7 @@ def test_unconfirmed_pr1_readings_remain_experimental(sensors: dict[str, SensorE
     assert description.state_class is None
 
 
-@pytest.mark.parametrize("key", ["load_power_39134", "load_power_31016"])
+@pytest.mark.parametrize("key", ["load_power_31016"])
 def test_duplicate_power_pairs_are_optional_diagnostics(sensors: dict[str, SensorEntity], key: str) -> None:
     description = sensors[key].entity_description
     assert description.entity_category == EntityCategory.DIAGNOSTIC
@@ -468,7 +479,8 @@ def test_duplicate_power_pairs_are_optional_diagnostics(sensors: dict[str, Senso
     ("key", "values"),
     [
         ("load_power", {39225: None, 39226: 203}),
-        ("load_power_39134", {39134: 0, 39135: None}),
+        ("inv_power", {39134: 0, 39135: None}),
+        ("inv_power", {39134: None, 39135: 1288}),
         ("invbatpower_39237", {39237: None, 39238: 570}),
         ("inv_power_39248", {39248: 65535, 39249: None}),
         ("solar_energy_total", {39601: None, 39602: 9220}),

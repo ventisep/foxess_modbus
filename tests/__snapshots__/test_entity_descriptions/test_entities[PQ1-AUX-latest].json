@@ -318,6 +318,17 @@
   },
   {
     "addresses": [
+      39135,
+      39134
+    ],
+    "key": "inv_power",
+    "name": "Inverter Power",
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
+  },
+  {
+    "addresses": [
       39249,
       39248
     ],
@@ -419,17 +430,6 @@
     "name": "Load Power (Register 31016)",
     "scale": 0.001,
     "signed": true,
-    "type": "sensor"
-  },
-  {
-    "addresses": [
-      39135,
-      39134
-    ],
-    "key": "load_power_39134",
-    "name": "Load Power (Register 39134)",
-    "scale": 0.001,
-    "signed": false,
     "type": "sensor"
   },
   {
@@ -1166,7 +1166,7 @@
     ],
     "bitmask": 12,
     "key": "remote_control_target",
-    "name": "Remote Control Target (Experimental)",
+    "name": "Remote Control Power Target (Experimental)",
     "type": "select",
     "values": {
       "0": "AC",

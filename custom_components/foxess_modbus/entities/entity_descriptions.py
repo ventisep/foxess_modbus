@@ -916,7 +916,7 @@ def _h3_current_voltage_power_entities() -> Iterable[EntityFactory]:
     yield _inv_power(
         phase=None,
         addresses=[
-            ModbusAddressesSpec(holding=[39135, 39134], models=Inv.H3_PRO_SET | Inv.H3_SMART | Inv.EVO),
+            ModbusAddressesSpec(holding=[39135, 39134], models=Inv.H3_PRO_SET | Inv.H3_SMART | Inv.EVO | Inv.PQ1),
         ],
         scale=0.001,
     )
@@ -1392,14 +1392,8 @@ def _h3_current_voltage_power_entities() -> Iterable[EntityFactory]:
             ModbusAddressesSpec(holding=[39226, 39225], models=Inv.H3_PRO_SET | Inv.H3_SMART | Inv.EVO | Inv.PQ1),
         ],
     )
-    # These addresses mean home load on PQ1, although 39134 is inverter power
-    # on other products. Keep the alternative readings as optional diagnostics.
-    yield _load_power(
-        phase=None,
-        addresses=[ModbusAddressesSpec(holding=[39135, 39134], models=Inv.PQ1)],
-        register_label="39134",
-        signed=False,
-    )
+    # 39134-39135 is net inverter AC power, mapped by the shared inverter helper.
+    # Keep only the unresolved 31016 load comparison as an optional diagnostic.
     yield _load_power(
         phase=None,
         addresses=[ModbusAddressesSpec(holding=[31016], models=Inv.PQ1)],
@@ -2952,7 +2946,7 @@ def _pq1_entities() -> Iterable[EntityFactory]:
     yield ModbusSelectDescription(
         key="remote_control_target",
         address=[ModbusAddressSpec(holding=46001, models=Inv.PQ1)],
-        name="Remote Control Target (Experimental)",
+        name="Remote Control Power Target (Experimental)",
         options_map={0: "AC", 4: "Battery", 8: "Grid CT-Meter", 12: "AC (Grid First)"},
         bitmask=0x000C,
         entity_category=EntityCategory.CONFIG,
