@@ -591,7 +591,7 @@ def _h1_current_voltage_power_entities() -> Iterable[EntityFactory]:
         key="rpower",
         addresses=[
             ModbusAddressesSpec(input=[11011], models=Inv.H1_G1 | Inv.KH_PRE119),
-            ModbusAddressesSpec(holding=[31008], models=Inv.H1_G1 | Inv.H1_LAN | Inv.H1_G2_SET | Inv.KH_133 | Inv.PQ1),
+            ModbusAddressesSpec(holding=[31008], models=Inv.H1_G1 | Inv.H1_LAN | Inv.H1_G2_SET | Inv.KH_133),
             ModbusAddressesSpec(holding=[31046, 31045], models=Inv.KH_PRE133),
         ],
         name="Inverter Power",
@@ -896,15 +896,15 @@ def _h3_current_voltage_power_entities() -> Iterable[EntityFactory]:
         phase: str | None,
         addresses: list[ModbusAddressesSpec],
         scale: float,
-        register_label: str | None = None,
+        key: str | None = None,
+        name: str | None = None,
     ) -> EntityFactory:
-        register_specific = register_label is not None
-        key_suffix = f"_{register_label}" if register_specific else f"_{phase}" if phase is not None else ""
-        name_suffix = f" (Register {register_label})" if register_specific else f" {phase}" if phase is not None else ""
+        key_suffix = f"_{phase}" if phase is not None else ""
+        name_suffix = f" {phase}" if phase is not None else ""
         return ModbusSensorDescription(
-            key=f"inv_power{key_suffix}",
+            key=key if key is not None else f"inv_power{key_suffix}",
             addresses=addresses,
-            name=f"Inverter Power{name_suffix}",
+            name=name if name is not None else f"Inverter Power{name_suffix}",
             device_class=SensorDeviceClass.POWER,
             state_class=SensorStateClass.MEASUREMENT,
             native_unit_of_measurement="kW",
@@ -944,13 +944,14 @@ def _h3_current_voltage_power_entities() -> Iterable[EntityFactory]:
         ],
         scale=0.001,
     )
-    # PQ1 PV/export and remote-charge captures establish net inverter AC power.
-    # Retain the existing register-specific key for installed HA configurations.
+    # Single-phase PQ1 uses the modern R-phase pair, retaining its rpower key.
+    # Total inverter power is the shared 39134-39135 mapping above.
     yield _inv_power(
-        phase=None,
+        phase="R",
         addresses=[ModbusAddressesSpec(holding=[39249, 39248], models=Inv.PQ1)],
         scale=0.001,
-        register_label="39248",
+        key="rpower",
+        name="Inverter Rpower",
     )
 
     def _inv_power_reactive(phase: str | None, addresses: list[ModbusAddressesSpec]) -> EntityFactory:
@@ -2946,10 +2947,9 @@ def _pq1_entities() -> Iterable[EntityFactory]:
     yield ModbusSelectDescription(
         key="remote_control_target",
         address=[ModbusAddressSpec(holding=46001, models=Inv.PQ1)],
-        name="Remote Control Power Target (Experimental)",
+        name="Target Power Measure",
         options_map={0: "AC", 4: "Battery", 8: "Grid CT-Meter", 12: "AC (Grid First)"},
         bitmask=0x000C,
-        entity_category=EntityCategory.CONFIG,
         icon="mdi:transmission-tower",
     )
     yield ModbusSensorDescription(

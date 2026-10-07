@@ -329,17 +329,6 @@
   },
   {
     "addresses": [
-      39249,
-      39248
-    ],
-    "key": "inv_power_39248",
-    "name": "Inverter Power (Register 39248)",
-    "scale": 0.001,
-    "signed": true,
-    "type": "sensor"
-  },
-  {
-    "addresses": [
       39257,
       39256
     ],
@@ -1166,7 +1155,7 @@
     ],
     "bitmask": 12,
     "key": "remote_control_target",
-    "name": "Remote Control Power Target (Experimental)",
+    "name": "Target Power Measure",
     "type": "select",
     "values": {
       "0": "AC",
@@ -1187,10 +1176,11 @@
   },
   {
     "addresses": [
-      31008
+      39249,
+      39248
     ],
     "key": "rpower",
-    "name": "Inverter Power",
+    "name": "Inverter Rpower",
     "scale": 0.001,
     "signed": true,
     "type": "sensor"

@@ -223,7 +223,8 @@ def test_profile_and_entities(controller: ModbusController, sensors: dict[str, S
     assert {entity.entity_description.key for entity in numbers} == {"force_charge_power", "force_discharge_power"}
     assert {entity.entity_description.key for entity in selects} == {"force_charge_mode", "remote_control_target"}
     target = next(entity for entity in selects if entity.entity_description.key == "remote_control_target")
-    assert target.entity_description.name == "Remote Control Power Target (Experimental)"
+    assert target.entity_description.name == "Target Power Measure"
+    assert target.entity_description.entity_category is None
     assert cast(ModbusControllerEntity, target).addresses == [46001]
     assert not any(
         factory.depends_on_other_entities for factory in ENTITIES if factory.serialize(Inv.PQ1, RegisterType.HOLDING)
@@ -244,7 +245,10 @@ def test_profile_and_entities(controller: ModbusController, sensors: dict[str, S
         assert cast(ModbusControllerEntity, sensors[key]).addresses == [31050, 31049]
     assert "bms_kwh_remaining" not in sensors
     assert "invbatpower_39248" not in sensors
-    assert cast(ModbusControllerEntity, sensors["inv_power_39248"]).addresses == [39249, 39248]
+    assert cast(ModbusControllerEntity, sensors["rpower"]).addresses == [39249, 39248]
+    assert sensors["rpower"].entity_description.name == "Inverter Rpower"
+    assert "inv_power_39248" not in sensors
+    assert 31008 not in addresses
     assert cast(ModbusControllerEntity, sensors["inv_power"]).addresses == [39135, 39134]
     assert "load_power_39134" not in sensors
     assert "pv1_energy_total" not in sensors
@@ -327,14 +331,14 @@ async def test_poll_ranges_avoid_invalid_block(
         ("invbatpower_39237", {39237: 0, 39238: 30}, 0.030),
         ("invbatpower_39237", {39237: 65535, 39238: 64474}, -1.062),
         ("invbatpower_39237", {39237: 0, 39238: 0}, 0.0),
-        ("inv_power_39248", {39248: 0, 39249: 412}, 0.412),
-        ("inv_power_39248", {39248: 65535, 39249: 65522}, -0.014),
+        ("rpower", {39248: 0, 39249: 412}, 0.412),
+        ("rpower", {39248: 65535, 39249: 65522}, -0.014),
         ("inv_power_Q_R", {39256: 65535, 39257: 65482}, -0.054),
         ("inv_power_Q_R", {39256: 0, 39257: 54}, 0.054),
-        ("inv_power_39248", {39248: 65535, 39249: 65455}, -0.081),
-        ("inv_power_39248", {39248: 0, 39249: 548}, 0.548),
-        ("inv_power_39248", {39248: 0, 39249: 708}, 0.708),
-        ("inv_power_39248", {39248: 65535, 39249: 65036}, -0.500),
+        ("rpower", {39248: 65535, 39249: 65455}, -0.081),
+        ("rpower", {39248: 0, 39249: 548}, 0.548),
+        ("rpower", {39248: 0, 39249: 708}, 0.708),
+        ("rpower", {39248: 65535, 39249: 65036}, -0.500),
         ("battery_charge_total", {32003: 0, 32004: 464}, 46.4),
         ("battery_charge_today", {32005: 62}, 6.2),
         ("battery_discharge_total", {32006: 0, 32007: 371}, 37.1),
@@ -433,7 +437,7 @@ def test_experimental_settings_do_not_leak_to_p1(
         "pv4_power",
         "load_power",
         "invbatpower_39237",
-        "inv_power_39248",
+        "rpower",
         "inv_power",
         "grid_ct",
         "grid_consumption",
@@ -482,7 +486,7 @@ def test_duplicate_power_pairs_are_optional_diagnostics(sensors: dict[str, Senso
         ("inv_power", {39134: 0, 39135: None}),
         ("inv_power", {39134: None, 39135: 1288}),
         ("invbatpower_39237", {39237: None, 39238: 570}),
-        ("inv_power_39248", {39248: 65535, 39249: None}),
+        ("rpower", {39248: 65535, 39249: None}),
         ("solar_energy_total", {39601: None, 39602: 9220}),
         ("solar_energy_total", {39601: 0, 39602: None}),
         ("solar_energy_today", {39603: None, 39604: 2830}),
