@@ -30,8 +30,11 @@ from custom_components.foxess_modbus.const import INVERTER_MODEL
 from custom_components.foxess_modbus.const import MAX_READ
 from custom_components.foxess_modbus.const import UNIQUE_ID_PREFIX
 from custom_components.foxess_modbus.entities.entity_descriptions import ENTITIES
+from custom_components.foxess_modbus.entities.inverter_model_spec import ModbusAddressSpec
 from custom_components.foxess_modbus.entities.modbus_enum_sensor import ModbusEnumSensorDescription
 from custom_components.foxess_modbus.entities.modbus_lambda_sensor import ModbusLambdaSensor
+from custom_components.foxess_modbus.entities.modbus_select import ModbusSelect
+from custom_components.foxess_modbus.entities.modbus_select import ModbusSelectDescription
 from custom_components.foxess_modbus.entities.modbus_sensor import ModbusSensor
 from custom_components.foxess_modbus.inverter_profiles import INVERTER_PROFILES
 from custom_components.foxess_modbus.inverter_profiles import inverter_connection_type_profile_from_config
@@ -76,6 +79,115 @@ def numeric_value(sensor: SensorEntity) -> int | float | None:
     return cast(ModbusSensor, sensor)._calculate_native_value()  # noqa: SLF001
 
 
+@pytest.fixture
+def remote_target(controller: ModbusController) -> ModbusSelect:
+    profile = inverter_connection_type_profile_from_config(controller.inverter_details)
+    entity = next(
+        entity
+        for entity in profile.create_entities(SelectEntity, controller)
+        if entity.entity_description.key == "remote_control_target"
+    )
+    controller.register_modbus_entity(cast(ModbusControllerEntity, entity))
+    return cast(ModbusSelect, entity)
+
+
+@pytest.mark.parametrize("other_bits", [0, 1, 2, 3, 0x8003])
+@pytest.mark.parametrize("target, option", [(0, "AC"), (4, "Battery"), (8, "Grid CT-Meter"), (12, "AC (Grid First)")])
+async def test_remote_target_preserves_fresh_non_target_bits(
+    controller: ModbusController, remote_target: ModbusSelect, other_bits: int, target: int, option: str
+) -> None:
+    # Cached configuration is deliberately different from the fresh read.
+    set_registers(controller, {46001: 12})
+    with (
+        patch.object(controller, "read_registers", AsyncMock(return_value=[other_bits | 12])) as read,
+        patch.object(controller, "write_register", AsyncMock()) as write,
+    ):
+        await remote_target.async_select_option(option)
+        read.assert_awaited_once_with(46001, 1, RegisterType.HOLDING)
+        write.assert_awaited_once_with(46001, other_bits | target)
+
+
+@pytest.mark.parametrize(
+    "raw, option",
+    [
+        (12, "AC (Grid First)"),
+        (13, "AC (Grid First)"),
+        (7, "Battery"),
+        (0x800B, "Grid CT-Meter"),
+        (1, "AC"),
+        (None, None),
+    ],
+)
+def test_remote_target_decodes_only_target_bits(
+    controller: ModbusController, remote_target: ModbusSelect, raw: int | None, option: str | None
+) -> None:
+    set_registers(controller, {46001: raw})
+    assert remote_target.current_option == option
+
+
+@pytest.mark.parametrize("words", [[], [12, 12], [-1], [65536]])
+async def test_remote_target_invalid_read_does_not_write(
+    controller: ModbusController, remote_target: ModbusSelect, words: list[int]
+) -> None:
+    with (
+        patch.object(controller, "read_registers", AsyncMock(return_value=words)),
+        patch.object(controller, "write_register", AsyncMock()) as write,
+    ):
+        with pytest.raises(ValueError, match="unavailable or invalid"):
+            await remote_target.async_select_option("Battery")
+        write.assert_not_awaited()
+
+
+async def test_remote_target_read_error_does_not_write(
+    controller: ModbusController, remote_target: ModbusSelect
+) -> None:
+    with (
+        patch.object(controller, "read_registers", AsyncMock(side_effect=RuntimeError("read failed"))),
+        patch.object(controller, "write_register", AsyncMock()) as write,
+    ):
+        with pytest.raises(RuntimeError, match="read failed"):
+            await remote_target.async_select_option("Battery")
+        write.assert_not_awaited()
+
+
+async def test_remote_target_unknown_option_does_not_write(
+    controller: ModbusController, remote_target: ModbusSelect
+) -> None:
+    with (
+        patch.object(controller, "read_registers", AsyncMock()) as read,
+        patch.object(controller, "write_register", AsyncMock()) as write,
+    ):
+        await remote_target.async_select_option("Invalid")
+        read.assert_not_awaited()
+        write.assert_not_awaited()
+
+
+async def test_existing_select_still_writes_whole_register(controller: ModbusController) -> None:
+    # The optional mask must not change existing select behaviour.
+    description = ModbusSelectDescription(
+        key="unmasked_test",
+        name="Unmasked",
+        address=[ModbusAddressSpec(holding=49203, models=Inv.PQ1)],
+        options_map={1: "Self Use", 2: "Feed-in Priority"},
+    )
+    entity = cast(ModbusSelect, description.create_entity_if_supported(controller, Inv.PQ1, RegisterType.HOLDING))
+    with (
+        patch.object(controller, "read_registers", AsyncMock()) as read,
+        patch.object(controller, "write_register", AsyncMock()) as write,
+    ):
+        await entity.async_select_option("Feed-in Priority")
+        read.assert_not_awaited()
+        write.assert_awaited_once_with(49203, 2)
+
+
+def test_remote_target_serialization_does_not_mutate_options(remote_target: ModbusSelect) -> None:
+    description = cast(ModbusSelectDescription, remote_target.entity_description)
+    serialized = description.serialize(Inv.PQ1, RegisterType.HOLDING)
+    assert serialized is not None
+    serialized["values"]["0"] = serialized["values"].pop(0)
+    assert description.options_map[0] == "AC"
+
+
 @pytest.mark.parametrize("packed", [False, True])
 async def test_detect_pq1(packed: bool) -> None:
     client = AsyncMock(spec=ModbusClient)
@@ -109,7 +221,7 @@ def test_profile_and_entities(controller: ModbusController, sensors: dict[str, S
     numbers = profile.create_entities(NumberEntity, controller)
     selects = profile.create_entities(SelectEntity, controller)
     assert {entity.entity_description.key for entity in numbers} == {"force_charge_power", "force_discharge_power"}
-    assert {entity.entity_description.key for entity in selects} == {"force_charge_mode"}
+    assert {entity.entity_description.key for entity in selects} == {"force_charge_mode", "remote_control_target"}
     assert not any(
         factory.depends_on_other_entities for factory in ENTITIES if factory.serialize(Inv.PQ1, RegisterType.HOLDING)
     )
@@ -177,6 +289,7 @@ async def test_poll_ranges_avoid_invalid_block(
         ("bms_charge_rate", {31025: 500}, 50),
         ("bms_discharge_rate", {31026: 500}, 50),
         ("pq1_register_37632", {37632: 1920}, 1920),
+        ("battery_nominal_capacity", {37635: 1971}, 19.71),
         ("rfreq", {39139: 4991}, 49.91),
         ("max_charge_current", {41007: 500}, 50),
         ("min_soc", {41009: 10}, 10),
@@ -195,18 +308,23 @@ async def test_poll_ranges_avoid_invalid_block(
         ("grid_ct", {31049: 0, 31050: 40000}, -40),
         ("grid_ct", {31049: 65535, 31050: 25536}, 40),
         ("load_power", {39225: 0, 39226: 203}, 0.203),
+        ("load_power", {39225: 0, 39226: 271}, 0.271),
         ("load_power_39134", {39134: 0, 39135: 177}, 0.177),
         ("load_power_31016", {31016: 200}, 0.2),
         ("invbatpower_39237", {39237: 65535, 39238: 65333}, -0.203),
         ("invbatpower_39237", {39237: 0, 39238: 570}, 0.570),
         ("invbatpower_39237", {39237: 0, 39238: 465}, 0.465),
         ("invbatpower_39237", {39237: 0, 39238: 30}, 0.030),
+        ("invbatpower_39237", {39237: 65535, 39238: 64474}, -1.062),
+        ("invbatpower_39237", {39237: 0, 39238: 0}, 0.0),
         ("inv_power_39248", {39248: 0, 39249: 412}, 0.412),
         ("inv_power_39248", {39248: 65535, 39249: 65522}, -0.014),
         ("inv_power_Q_R", {39256: 65535, 39257: 65482}, -0.054),
         ("inv_power_Q_R", {39256: 0, 39257: 54}, 0.054),
         ("inv_power_39248", {39248: 65535, 39249: 65455}, -0.081),
         ("inv_power_39248", {39248: 0, 39249: 548}, 0.548),
+        ("inv_power_39248", {39248: 0, 39249: 708}, 0.708),
+        ("inv_power_39248", {39248: 65535, 39249: 65036}, -0.500),
         ("battery_charge_total", {32003: 0, 32004: 464}, 46.4),
         ("battery_charge_today", {32005: 62}, 6.2),
         ("battery_discharge_total", {32006: 0, 32007: 371}, 37.1),
@@ -250,14 +368,6 @@ def test_experimental_metadata_and_missing_words(
     assert energy.extra_state_attributes == {
         "mapping_status": "provisional",
         "raw_registers": {"32019": 10, "32018": None},
-    }
-    candidate = sensors["inv_power_39248"]
-    set_registers(controller, {39248: 65535, 39249: 65522})
-    assert candidate.entity_description.name == "Inverter Power (Register 39248) (Experimental)"
-    assert candidate.entity_description.state_class is None
-    assert candidate.extra_state_attributes == {
-        "mapping_status": "provisional",
-        "raw_registers": {"39249": 65522, "39248": 65535},
     }
     assert sensors["battery_temp"].entity_description.name == "Battery Temp (Experimental)"
     reactive = sensors["inv_power_Q_R"]
@@ -312,6 +422,8 @@ def test_experimental_settings_do_not_leak_to_p1(
         "pv3_power",
         "pv4_power",
         "load_power",
+        "invbatpower_39237",
+        "inv_power_39248",
         "grid_ct",
         "grid_consumption",
         "battery_charge_total",
@@ -345,7 +457,7 @@ def test_unconfirmed_pr1_readings_remain_experimental(sensors: dict[str, SensorE
     assert description.state_class is None
 
 
-@pytest.mark.parametrize("key", ["load_power_39134", "load_power_31016", "invbatpower_39237", "inv_power_39248"])
+@pytest.mark.parametrize("key", ["load_power_39134", "load_power_31016"])
 def test_duplicate_power_pairs_are_optional_diagnostics(sensors: dict[str, SensorEntity], key: str) -> None:
     description = sensors[key].entity_description
     assert description.entity_category == EntityCategory.DIAGNOSTIC
@@ -389,6 +501,43 @@ def test_pv_total_uses_all_four_confirmed_strings(hass: HomeAssistant, sensors: 
         hass.states.async_set(sensors["pv3_power"].entity_id, "unavailable")
         sensor._update_value()  # noqa: SLF001
         assert sensor.native_value is None
+
+
+@pytest.mark.parametrize(
+    ("capacity", "soh", "soc", "expected"),
+    [
+        ("19.71", "100", "83", 16.3593),
+        ("19.71", "90", "50", 8.8695),
+        ("19.71", "100", "0", 0),
+        ("19.71", "100", "100", 19.71),
+        ("19.71", None, "50", None),
+        ("19.71", "unavailable", "50", None),
+        ("19.71", "100", "unknown", None),
+        ("19.71", "101", "50", None),
+        ("19.71", "100", "-1", None),
+        ("nan", "100", "50", None),
+        ("0", "100", "50", None),
+    ],
+)
+def test_estimated_battery_energy_requires_valid_sources(
+    hass: HomeAssistant,
+    sensors: dict[str, SensorEntity],
+    capacity: str,
+    soh: str | None,
+    soc: str,
+    expected: float | None,
+) -> None:
+    sensor = cast(ModbusLambdaSensor, sensors["battery_energy_remaining"])
+    sensor.hass = hass
+    for key, value in zip(("battery_nominal_capacity", "battery_soh", "battery_soc"), (capacity, soh, soc)):
+        if value is not None:
+            hass.states.async_set(sensors[key].entity_id, value)
+    with patch.object(sensor, "schedule_update_ha_state"):
+        sensor._update_value()  # noqa: SLF001
+    if expected is None:
+        assert sensor.native_value is None
+    else:
+        assert sensor.native_value == pytest.approx(expected)
 
 
 def test_enum_serialization_does_not_mutate_mode_map(

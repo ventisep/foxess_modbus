@@ -1,6 +1,7 @@
 """Holds all entity descriptions for all entities across all inverters"""
 
 import itertools
+import math
 from typing import Iterable
 
 from homeassistant.components.number import NumberDeviceClass
@@ -33,6 +34,7 @@ from .modbus_inverter_state_sensor import ModbusG2InverterStateSensorDescription
 from .modbus_inverter_state_sensor import ModbusInverterStateSensorDescription
 from .modbus_lambda_sensor import ModbusLambdaSensorDescription
 from .modbus_number import ModbusNumberDescription
+from .modbus_select import ModbusSelectDescription
 from .modbus_sensor import ModbusSensorDescription
 from .modbus_version_sensor import ModbusVersionSensorDescription
 from .modbus_work_mode_select import ModbusWorkModeSelectDescription
@@ -896,11 +898,10 @@ def _h3_current_voltage_power_entities() -> Iterable[EntityFactory]:
         scale: float,
         register_label: str | None = None,
     ) -> EntityFactory:
-        diagnostic = register_label is not None
-        key_suffix = f"_{register_label}" if diagnostic else f"_{phase}" if phase is not None else ""
-        name_suffix = f" (Register {register_label})" if diagnostic else f" {phase}" if phase is not None else ""
+        register_specific = register_label is not None
+        key_suffix = f"_{register_label}" if register_specific else f"_{phase}" if phase is not None else ""
+        name_suffix = f" (Register {register_label})" if register_specific else f" {phase}" if phase is not None else ""
         return ModbusSensorDescription(
-            experimental_models=Inv.PQ1,
             key=f"inv_power{key_suffix}",
             addresses=addresses,
             name=f"Inverter Power{name_suffix}",
@@ -910,8 +911,6 @@ def _h3_current_voltage_power_entities() -> Iterable[EntityFactory]:
             scale=scale,
             round_to=0.01,
             validate=[Range(-100, 100)],
-            entity_category=EntityCategory.DIAGNOSTIC if diagnostic else None,
-            entity_registry_enabled_default=not diagnostic,
         )
 
     yield _inv_power(
@@ -945,8 +944,8 @@ def _h3_current_voltage_power_entities() -> Iterable[EntityFactory]:
         ],
         scale=0.001,
     )
-    # PQ1's import/export captures support net inverter AC output at this pair.
-    # Keep the interpretation experimental pending simultaneous PV/grid checks.
+    # PQ1 PV/export and remote-charge captures establish net inverter AC power.
+    # Retain the existing register-specific key for installed HA configurations.
     yield _inv_power(
         phase=None,
         addresses=[ModbusAddressesSpec(holding=[39249, 39248], models=Inv.PQ1)],
@@ -1477,9 +1476,9 @@ def _inverter_entities() -> Iterable[EntityFactory]:
     def _invbatpower(
         index: int | None, addresses: list[ModbusAddressesSpec], register_label: str | None = None
     ) -> Iterable[ModbusSensorDescription]:
-        diagnostic = register_label is not None
-        key_suffix = f"_{register_label}" if diagnostic else f"_{index}" if index is not None else ""
-        name_infix = f" (Register {register_label})" if diagnostic else f" {index}" if index is not None else ""
+        register_specific = register_label is not None
+        key_suffix = f"_{register_label}" if register_specific else f"_{index}" if index is not None else ""
+        name_infix = f" (Register {register_label})" if register_specific else f" {index}" if index is not None else ""
         yield ModbusSensorDescription(
             key=f"invbatpower{key_suffix}",
             addresses=addresses,
@@ -1490,10 +1489,8 @@ def _inverter_entities() -> Iterable[EntityFactory]:
             scale=0.001,
             round_to=0.01,
             validate=[Range(-100, 100)],
-            entity_category=EntityCategory.DIAGNOSTIC if diagnostic else None,
-            entity_registry_enabled_default=not diagnostic,
         )
-        if diagnostic:
+        if register_specific:
             return
         yield ModbusSensorDescription(
             key=f"battery_discharge{key_suffix}",
@@ -1551,8 +1548,8 @@ def _inverter_entities() -> Iterable[EntityFactory]:
             ModbusAddressesSpec(holding=[39236, 39235], models=Inv.H3_PRO_SET | Inv.H3_SMART),
         ],
     )
-    # Alternative signed battery comparison on PQ1. Reuse the same
-    # decoder without adding duplicate charge/discharge direction entities.
+    # Confirmed signed battery power on PQ1, retaining the comparison key.
+    # Reuse the decoder; 31022 still supplies the primary direction entities.
     yield from _invbatpower(
         index=None,
         addresses=[ModbusAddressesSpec(holding=[39238, 39237], models=Inv.PQ1)],
@@ -2952,6 +2949,46 @@ def _configuration_entities() -> Iterable[EntityFactory]:
 
 def _pq1_entities() -> Iterable[EntityFactory]:
     """PQ1-only readings; shared telemetry is mapped in the factories above."""
+    yield ModbusSelectDescription(
+        key="remote_control_target",
+        address=[ModbusAddressSpec(holding=46001, models=Inv.PQ1)],
+        name="Remote Control Target (Experimental)",
+        options_map={0: "AC", 4: "Battery", 8: "Grid CT-Meter", 12: "AC (Grid First)"},
+        bitmask=0x000C,
+        entity_category=EntityCategory.CONFIG,
+        icon="mdi:transmission-tower",
+    )
+    yield ModbusSensorDescription(
+        key="battery_nominal_capacity",
+        addresses=[ModbusAddressesSpec(holding=[37635], models=Inv.PQ1)],
+        name="Battery Nominal Capacity",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="kWh",
+        scale=0.01,
+        signed=False,
+        validate=[Min(0)],
+    )
+
+    def remaining_energy(values: list[float]) -> float | None:
+        # All three sources are required: the generic lambda sensor skips missing entities.
+        if len(values) != 3 or not all(math.isfinite(value) for value in values):
+            return None
+        capacity, soh, soc = values
+        if capacity <= 0 or not 0 <= soh <= 100 or not 0 <= soc <= 100:
+            return None
+        return capacity * soh * soc / 10000
+
+    yield ModbusLambdaSensorDescription(
+        key="battery_energy_remaining",
+        models=[EntitySpec(register_types=[RegisterType.HOLDING], models=Inv.PQ1)],
+        sources=["battery_nominal_capacity", "battery_soh", "battery_soc"],
+        method=remaining_energy,
+        name="Battery Energy Remaining (Estimated)",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="kWh",
+    )
     yield ModbusEnumSensorDescription(
         key="manual_work_mode",
         address=[ModbusAddressSpec(holding=41000, models=Inv.PQ1)],

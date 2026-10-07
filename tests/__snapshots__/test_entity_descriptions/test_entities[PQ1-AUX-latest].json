@@ -73,6 +73,26 @@
     "type": "sensor"
   },
   {
+    "key": "battery_energy_remaining",
+    "name": "Battery Energy Remaining (Estimated)",
+    "sources": [
+      "battery_nominal_capacity",
+      "battery_soh",
+      "battery_soc"
+    ],
+    "type": "lambda"
+  },
+  {
+    "addresses": [
+      37635
+    ],
+    "key": "battery_nominal_capacity",
+    "name": "Battery Nominal Capacity",
+    "scale": 0.01,
+    "signed": false,
+    "type": "sensor"
+  },
+  {
     "addresses": [
       31024
     ],
@@ -301,7 +321,6 @@
       39249,
       39248
     ],
-    "experimental": true,
     "key": "inv_power_39248",
     "name": "Inverter Power (Register 39248)",
     "scale": 0.001,
@@ -1140,6 +1159,21 @@
     "scale": 0.1,
     "signed": true,
     "type": "sensor"
+  },
+  {
+    "addresses": [
+      46001
+    ],
+    "bitmask": 12,
+    "key": "remote_control_target",
+    "name": "Remote Control Target (Experimental)",
+    "type": "select",
+    "values": {
+      "0": "AC",
+      "12": "AC (Grid First)",
+      "4": "Battery",
+      "8": "Grid CT-Meter"
+    }
   },
   {
     "addresses": [
