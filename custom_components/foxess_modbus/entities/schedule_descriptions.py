@@ -68,8 +68,8 @@ SCHEDULE_DESCRIPTION = ModbusScheduleFactory(
                 # 48010-48969. Other model/firmware specs can select another range.
                 max_records=96,
                 current_work_mode=ModbusCurrentWorkModeAddressConfig(
-                    manual_work_mode=41000,
-                    manual_work_mode_map={0: "Self Use", 1: "Feed-in Priority", 2: "Back-up", 3: "Peak Shaving"},
+                    manual_work_mode=49203,
+                    manual_work_mode_map={1: "Self Use", 2: "Feed-in Priority", 3: "Back-up", 4: "Peak Shaving"},
                     scheduler_enabled=48000,
                     battery_soc=31024,
                     remote_enable=46001,

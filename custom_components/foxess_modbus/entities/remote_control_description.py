@@ -22,7 +22,7 @@ REMOTE_CONTROL_DESCRIPTION = ModbusRemoteControlFactory(
                 work_mode=None,
                 work_mode_map=None,
                 max_soc=41010,
-                invbatpower=[31022],
+                invbatpower=[39238, 39237],
                 battery_soc=[31024],
                 # Available import power and the configured power ceiling need further testing.
                 # Reuse the existing fixed-power path until a suitable charging limit is confirmed.

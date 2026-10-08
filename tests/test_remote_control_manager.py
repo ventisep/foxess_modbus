@@ -48,7 +48,7 @@ def controller() -> MagicMock:
         39072: 811,
         39074: 1499,
         39076: 340,
-        (31022,): 620,
+        (39238, 39237): 620,
     }.get(tuple(address) if isinstance(address, list) else address)
     result.read_registers = AsyncMock(return_value=[12])
     return result
@@ -141,7 +141,7 @@ def test_pq1_config_uses_only_supported_monitoring(config: ModbusRemoteControlAd
     assert config.work_mode is None
     assert config.max_soc == 41010
     assert config.battery_soc == [31024]
-    assert config.invbatpower == [31022]
+    assert config.invbatpower == [39238, 39237]
     assert config.pwr_limit_bat_up is None
     assert config.pv_voltages == [39070, 39072, 39074, 39076]
 

@@ -744,7 +744,6 @@ def _h1_current_voltage_power_entities() -> Iterable[EntityFactory]:
             validate=[Range(-100, 100)],
         )
         yield ModbusSensorDescription(
-            experimental_models=Inv.PQ1,
             key="feed_in",
             addresses=addresses,
             name="Feed-in",
@@ -959,7 +958,6 @@ def _h3_current_voltage_power_entities() -> Iterable[EntityFactory]:
         key_suffix = f"_{phase}" if phase is not None else ""
         name_suffix = f" {phase}" if phase is not None else ""
         return ModbusSensorDescription(
-            experimental_models=Inv.PQ1,
             key=f"inv_power_Q{key_suffix}",
             addresses=addresses,
             entity_registry_enabled_default=False,
@@ -980,7 +978,7 @@ def _h3_current_voltage_power_entities() -> Iterable[EntityFactory]:
     )
     yield _inv_power_reactive(
         phase="R",
-        addresses=[ModbusAddressesSpec(holding=[39257, 39256], models=Inv.H3_PRO_SET | Inv.H3_SMART | Inv.PQ1)],
+        addresses=[ModbusAddressesSpec(holding=[39257, 39256], models=Inv.H3_PRO_SET | Inv.H3_SMART)],
     )
     yield _inv_power_reactive(
         phase="S", addresses=[ModbusAddressesSpec(holding=[39259, 39258], models=Inv.H3_PRO_SET | Inv.H3_SMART)]
@@ -1345,12 +1343,10 @@ def _h3_current_voltage_power_entities() -> Iterable[EntityFactory]:
         phase: str | None,
         *,
         addresses: list[ModbusAddressesSpec],
-        register_label: str | None = None,
         signed: bool = True,
     ) -> EntityFactory:
-        diagnostic = register_label is not None
-        key_suffix = f"_{register_label}" if diagnostic else f"_{phase}" if phase is not None else ""
-        name_suffix = f" (Register {register_label})" if diagnostic else f" {phase}" if phase is not None else ""
+        key_suffix = f"_{phase}" if phase is not None else ""
+        name_suffix = f" {phase}" if phase is not None else ""
         return ModbusSensorDescription(
             key=f"load_power{key_suffix}",
             addresses=addresses,
@@ -1363,8 +1359,6 @@ def _h3_current_voltage_power_entities() -> Iterable[EntityFactory]:
             signed=signed,
             round_to=0.01,
             validate=[Range(-100, 100)],
-            entity_category=EntityCategory.DIAGNOSTIC if diagnostic else None,
-            entity_registry_enabled_default=not diagnostic,
         )
 
     yield _load_power(
@@ -1393,13 +1387,6 @@ def _h3_current_voltage_power_entities() -> Iterable[EntityFactory]:
         addresses=[
             ModbusAddressesSpec(holding=[39226, 39225], models=Inv.H3_PRO_SET | Inv.H3_SMART | Inv.EVO | Inv.PQ1),
         ],
-    )
-    # 39134-39135 is net inverter AC power, mapped by the shared inverter helper.
-    # Keep only the unresolved 31016 load comparison as an optional diagnostic.
-    yield _load_power(
-        phase=None,
-        addresses=[ModbusAddressesSpec(holding=[31016], models=Inv.PQ1)],
-        register_label="31016",
     )
 
 
@@ -1469,12 +1456,9 @@ def _inverter_entities() -> Iterable[EntityFactory]:
         addresses=[ModbusAddressesSpec(holding=[39234, 39233], models=Inv.H3_PRO_SET | Inv.H3_SMART)],
     )
 
-    def _invbatpower(
-        index: int | None, addresses: list[ModbusAddressesSpec], register_label: str | None = None
-    ) -> Iterable[ModbusSensorDescription]:
-        register_specific = register_label is not None
-        key_suffix = f"_{register_label}" if register_specific else f"_{index}" if index is not None else ""
-        name_infix = f" (Register {register_label})" if register_specific else f" {index}" if index is not None else ""
+    def _invbatpower(index: int | None, addresses: list[ModbusAddressesSpec]) -> Iterable[ModbusSensorDescription]:
+        key_suffix = f"_{index}" if index is not None else ""
+        name_infix = f" {index}" if index is not None else ""
         yield ModbusSensorDescription(
             key=f"invbatpower{key_suffix}",
             addresses=addresses,
@@ -1486,8 +1470,6 @@ def _inverter_entities() -> Iterable[EntityFactory]:
             round_to=0.01,
             validate=[Range(-100, 100)],
         )
-        if register_specific:
-            return
         yield ModbusSensorDescription(
             key=f"battery_discharge{key_suffix}",
             addresses=addresses,
@@ -1520,10 +1502,10 @@ def _inverter_entities() -> Iterable[EntityFactory]:
         addresses=[
             ModbusAddressesSpec(input=[11008], models=Inv.H1_G1 | Inv.KH_PRE119),
             ModbusAddressesSpec(
-                holding=[31022], models=Inv.H1_G1 | Inv.H1_LAN | Inv.H1_G2_SET | Inv.KH_PRE133 | Inv.KH_133 | Inv.PQ1
+                holding=[31022], models=Inv.H1_G1 | Inv.H1_LAN | Inv.H1_G2_SET | Inv.KH_PRE133 | Inv.KH_133
             ),
             ModbusAddressesSpec(holding=[31036], models=Inv.H3_SET),
-            ModbusAddressesSpec(holding=[39238, 39237], models=Inv.H3_PRO_SET | Inv.H3_SMART | Inv.EVO),
+            ModbusAddressesSpec(holding=[39238, 39237], models=Inv.H3_PRO_SET | Inv.H3_SMART | Inv.EVO | Inv.PQ1),
         ],
     )
     yield from _invbatpower(
@@ -1544,14 +1526,6 @@ def _inverter_entities() -> Iterable[EntityFactory]:
             ModbusAddressesSpec(holding=[39236, 39235], models=Inv.H3_PRO_SET | Inv.H3_SMART),
         ],
     )
-    # Confirmed signed battery power on PQ1, retaining the comparison key.
-    # Reuse the decoder; 31022 still supplies the primary direction entities.
-    yield from _invbatpower(
-        index=None,
-        addresses=[ModbusAddressesSpec(holding=[39238, 39237], models=Inv.PQ1)],
-        register_label="39237",
-    )
-
     yield ModbusSensorDescription(
         key="rfreq",
         addresses=[
@@ -1630,12 +1604,11 @@ def _inverter_entities() -> Iterable[EntityFactory]:
         validate=[Range(-50, 100)],
     )
     yield ModbusBatterySensorDescription(
-        experimental_models=Inv.PQ1,
         key="bms_charge_rate",
         addresses=[
             ModbusAddressesSpec(input=[11041], models=Inv.H1_G1 | Inv.KH_PRE119),
             ModbusAddressesSpec(
-                holding=[31025], models=Inv.H1_G1 | Inv.H1_LAN | Inv.H1_G2_SET | Inv.KH_PRE133 | Inv.KH_133 | Inv.PQ1
+                holding=[31025], models=Inv.H1_G1 | Inv.H1_LAN | Inv.H1_G2_SET | Inv.KH_PRE133 | Inv.KH_133
             ),
         ],
         entity_registry_enabled_default=False,
@@ -1649,12 +1622,11 @@ def _inverter_entities() -> Iterable[EntityFactory]:
         validate=[Range(0, 100)],
     )
     yield ModbusBatterySensorDescription(
-        experimental_models=Inv.PQ1,
         key="bms_discharge_rate",
         addresses=[
             ModbusAddressesSpec(input=[11042], models=Inv.H1_G1 | Inv.KH_PRE119),
             ModbusAddressesSpec(
-                holding=[31026], models=Inv.H1_G1 | Inv.H1_LAN | Inv.H1_G2_SET | Inv.KH_PRE133 | Inv.KH_133 | Inv.PQ1
+                holding=[31026], models=Inv.H1_G1 | Inv.H1_LAN | Inv.H1_G2_SET | Inv.KH_PRE133 | Inv.KH_133
             ),
         ],
         entity_registry_enabled_default=False,
@@ -2168,12 +2140,13 @@ def _inverter_entities() -> Iterable[EntityFactory]:
         scale=0.01,
     )
 
-    def _total_yield_total(addresses: list[ModbusAddressesSpec], scale: float) -> EntityFactory:
+    def _total_yield_total(
+        addresses: list[ModbusAddressesSpec], scale: float, name: str = "Yield Total"
+    ) -> EntityFactory:
         return ModbusSensorDescription(
-            experimental_models=Inv.PQ1,
             key="total_yield_total",
             addresses=addresses,
-            name="Yield Total",
+            name=name,
             device_class=SensorDeviceClass.ENERGY,
             state_class=SensorStateClass.TOTAL,
             native_unit_of_measurement="kWh",
@@ -2183,12 +2156,19 @@ def _inverter_entities() -> Iterable[EntityFactory]:
             validate=[Min(0)],
         )
 
+    # Same counter decoder, with the confirmed PQ1 AC-output meaning.
+    yield _total_yield_total(
+        addresses=[ModbusAddressesSpec(holding=[32016, 32015], models=Inv.PQ1)],
+        scale=0.1,
+        name="Inverter AC Output Energy Total",
+    )
+
     yield _total_yield_total(
         addresses=[
             ModbusAddressesSpec(input=[11085, 11084], models=Inv.H1_G1 | Inv.KH_PRE119),
             ModbusAddressesSpec(
                 holding=[32016, 32015],
-                models=Inv.H1_G1 | Inv.H1_G2_SET | Inv.H3_SET | Inv.KH_PRE133 | Inv.KH_133 | Inv.PQ1,
+                models=Inv.H1_G1 | Inv.H1_G2_SET | Inv.H3_SET | Inv.KH_PRE133 | Inv.KH_133,
             ),
             ModbusAddressesSpec(holding=[39622, 39621], models=Inv.H3_PRO_PRE122),
         ],
@@ -2204,12 +2184,13 @@ def _inverter_entities() -> Iterable[EntityFactory]:
         scale=0.01,
     )
 
-    def _total_yield_today(addresses: list[ModbusAddressesSpec], scale: float) -> EntityFactory:
+    def _total_yield_today(
+        addresses: list[ModbusAddressesSpec], scale: float, name: str = "Yield Today"
+    ) -> EntityFactory:
         return ModbusSensorDescription(
-            experimental_models=Inv.PQ1,
             key="total_yield_today",
             addresses=addresses,
-            name="Yield Today",
+            name=name,
             device_class=SensorDeviceClass.ENERGY,
             state_class=SensorStateClass.TOTAL_INCREASING,
             native_unit_of_measurement="kWh",
@@ -2219,11 +2200,18 @@ def _inverter_entities() -> Iterable[EntityFactory]:
             validate=[Range(-200, 200)],
         )
 
+    # Same counter decoder, with the confirmed PQ1 AC-output meaning.
+    yield _total_yield_today(
+        addresses=[ModbusAddressesSpec(holding=[32017], models=Inv.PQ1)],
+        scale=0.1,
+        name="Inverter AC Output Energy Today",
+    )
+
     yield _total_yield_today(
         addresses=[
             ModbusAddressesSpec(input=[11086], models=Inv.H1_G1 | Inv.KH_PRE119),
             ModbusAddressesSpec(
-                holding=[32017], models=Inv.H1_G1 | Inv.H1_G2_SET | Inv.H3_SET | Inv.KH_PRE133 | Inv.KH_133 | Inv.PQ1
+                holding=[32017], models=Inv.H1_G1 | Inv.H1_G2_SET | Inv.H3_SET | Inv.KH_PRE133 | Inv.KH_133
             ),
             ModbusAddressesSpec(holding=[39624, 39623], models=Inv.H3_PRO_PRE122),
         ],
@@ -2241,7 +2229,6 @@ def _inverter_entities() -> Iterable[EntityFactory]:
 
     def _input_energy_total(addresses: list[ModbusAddressesSpec], scale: float) -> EntityFactory:
         return ModbusSensorDescription(
-            experimental_models=Inv.PQ1,
             key="input_energy_total",
             addresses=addresses,
             name="Input Energy Total",
@@ -2259,7 +2246,7 @@ def _inverter_entities() -> Iterable[EntityFactory]:
             ModbusAddressesSpec(input=[11088, 11087], models=Inv.H1_G1 | Inv.KH_PRE119),
             ModbusAddressesSpec(
                 holding=[32019, 32018],
-                models=Inv.H1_G1 | Inv.H1_G2_SET | Inv.H3_SET | Inv.KH_PRE133 | Inv.KH_133 | Inv.PQ1,
+                models=Inv.H1_G1 | Inv.H1_G2_SET | Inv.H3_SET | Inv.KH_PRE133 | Inv.KH_133,
             ),
             ModbusAddressesSpec(holding=[39626, 39625], models=Inv.H3_PRO_PRE122),
         ],
@@ -2277,7 +2264,6 @@ def _inverter_entities() -> Iterable[EntityFactory]:
 
     def _input_energy_today(addresses: list[ModbusAddressesSpec], scale: float) -> EntityFactory:
         return ModbusSensorDescription(
-            experimental_models=Inv.PQ1,
             key="input_energy_today",
             addresses=addresses,
             name="Input Energy Today",
@@ -2294,7 +2280,7 @@ def _inverter_entities() -> Iterable[EntityFactory]:
         addresses=[
             ModbusAddressesSpec(input=[11089], models=Inv.H1_G1 | Inv.KH_PRE119),
             ModbusAddressesSpec(
-                holding=[32020], models=Inv.H1_G1 | Inv.H1_G2_SET | Inv.H3_SET | Inv.KH_PRE133 | Inv.KH_133 | Inv.PQ1
+                holding=[32020], models=Inv.H1_G1 | Inv.H1_G2_SET | Inv.H3_SET | Inv.KH_PRE133 | Inv.KH_133
             ),
             ModbusAddressesSpec(holding=[39628, 39627], models=Inv.H3_PRO_PRE122),
         ],
@@ -2430,7 +2416,6 @@ def _bms_entities() -> Iterable[EntityFactory]:
             validate=[Min(0)],
         )
         yield ModbusSensorDescription(
-            experimental_models=Inv.PQ1,
             key=f"bat_current{key_suffix}",
             addresses=bat_current,
             name=f"Battery{name_infix} Current",
@@ -2464,7 +2449,6 @@ def _bms_entities() -> Iterable[EntityFactory]:
             validate=[Range(0, 100)],
         )
         yield ModbusBatterySensorDescription(
-            experimental_models=Inv.PQ1,
             key=f"battery_temp{key_suffix}",
             addresses=battery_temp,
             bms_connect_state_address=bms_connect_state_address,
@@ -2544,7 +2528,7 @@ def _bms_entities() -> Iterable[EntityFactory]:
         ],
         bat_current=[
             ModbusAddressesSpec(input=[11035], models=Inv.H1_G1 | Inv.KH_PRE119),
-            ModbusAddressesSpec(holding=[37610], models=Inv.H1_G2_144 | Inv.PQ1),
+            ModbusAddressesSpec(holding=[37610], models=Inv.H1_G2_144),
             ModbusAddressesSpec(holding=[31035], models=Inv.H3_SET),
         ],
         battery_soc=[
@@ -2564,7 +2548,7 @@ def _bms_entities() -> Iterable[EntityFactory]:
         battery_temp=[
             ModbusAddressesSpec(input=[11038], models=Inv.H1_G1 | Inv.KH_PRE119),
             ModbusAddressesSpec(
-                holding=[31023], models=Inv.H1_G1 | Inv.H1_LAN | Inv.H1_G2_SET | Inv.KH_PRE133 | Inv.KH_133 | Inv.PQ1
+                holding=[31023], models=Inv.H1_G1 | Inv.H1_LAN | Inv.H1_G2_SET | Inv.KH_PRE133 | Inv.KH_133
             ),
             ModbusAddressesSpec(holding=[31037], models=Inv.H3_SET),
         ],
@@ -2881,21 +2865,22 @@ def _configuration_entities() -> Iterable[EntityFactory]:
         validate=[Range(0, 100)],
     )
 
-    # Register 46616+46617: Export Power Limit (I32 in watts, KH_133 only)
-    # Address list order [46617, 46616]: low-word register first (controller.read() convention)
-    yield ModbusSensorDescription(
-        experimental_models=Inv.PQ1,
-        key="export_power_limit",
-        addresses=[
-            ModbusAddressesSpec(holding=[46617, 46616], models=Inv.KH_133 | Inv.H3_SMART | Inv.PQ1),
-        ],
-        name="Export Power Limit",
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement="W",
-        icon="mdi:transmission-tower-export",
-        validate=[Range(0, 99999)],
-    )
+    def _export_power_limit(addresses: list[ModbusAddressesSpec], diagnostic: bool = False) -> ModbusSensorDescription:
+        return ModbusSensorDescription(
+            key="export_power_limit",
+            addresses=addresses,
+            name="Export Power Limit",
+            device_class=SensorDeviceClass.POWER,
+            state_class=SensorStateClass.MEASUREMENT,
+            native_unit_of_measurement="W",
+            icon="mdi:transmission-tower-export",
+            entity_category=EntityCategory.DIAGNOSTIC if diagnostic else None,
+            entity_registry_enabled_default=not diagnostic,
+            validate=[Range(0, 99999)],
+        )
+
+    yield _export_power_limit(addresses=[ModbusAddressesSpec(holding=[46617, 46616], models=Inv.KH_133 | Inv.H3_SMART)])
+    yield _export_power_limit(addresses=[ModbusAddressesSpec(holding=[46617, 46616], models=Inv.PQ1)], diagnostic=True)
     yield ModbusNumberDescription(
         key="export_power_limit",
         addresses=[
@@ -2986,17 +2971,16 @@ def _pq1_entities() -> Iterable[EntityFactory]:
     )
     yield ModbusEnumSensorDescription(
         key="manual_work_mode",
-        address=[ModbusAddressSpec(holding=41000, models=Inv.PQ1)],
-        name="Manual Work Mode",
-        # PQ1 exposes a zero-based manual-mode enum at 41000. Keep this
-        # separate from the one-based 49203 representation and scheduler enum.
-        options_map={0: "Self Use", 1: "Feed-in Priority", 2: "Backup", 3: "Peak Shaving"},
+        address=[ModbusAddressSpec(holding=49203, models=Inv.PQ1)],
+        name="Basic Work Mode",
+        # Basic-mode settings are independent of scheduler and remote overrides.
+        options_map={1: "Self Use", 2: "Feed-in Priority", 3: "Backup", 4: "Peak Shaving"},
     )
     yield ModbusEnumSensorDescription(
-        key="manual_work_mode_49203",
-        address=[ModbusAddressSpec(holding=49203, models=Inv.PQ1)],
-        name="Manual Work Mode (Register 49203)",
-        options_map={1: "Self Use", 2: "Feed-in Priority", 3: "Backup", 4: "Peak Shaving"},
+        key="manual_work_mode_41000",
+        address=[ModbusAddressSpec(holding=41000, models=Inv.PQ1)],
+        name="Basic Work Mode (Register 41000)",
+        options_map={0: "Self Use", 1: "Feed-in Priority", 2: "Backup", 3: "Peak Shaving"},
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     )
@@ -3007,69 +2991,6 @@ def _pq1_entities() -> Iterable[EntityFactory]:
         validate=[Range(0, 1)],
         icon_func=None,
     )
-
-    # Known-readable PQ1 words for cross-model comparisons. These are raw U16
-    # diagnostics, not semantic claims. Do not include untested adjacent words
-    # (e.g. 44003), scheduler banks or the invalid legacy charge periods.
-    raw_addresses = [
-        31000,
-        31003,
-        31014,
-        31015,
-        31019,
-        31027,
-        31028,
-        31039,
-        31042,
-        32000,
-        32001,
-        32002,
-        37002,
-        37611,
-        37632,
-        39063,
-        39065,
-        39067,
-        39068,
-        39069,
-        39123,
-        39126,
-        39134,
-        39204,
-        39205,
-        39216,
-        39217,
-        39225,
-        39226,
-        39237,
-        39238,
-        39248,
-        39249,
-        39256,
-        39257,
-        39270,
-        39271,
-        44000,
-        44001,
-        44002,
-        46607,
-        46608,
-        46609,
-        46610,
-        46611,
-        46618,
-        46619,
-        49203,
-    ]
-    for address in raw_addresses:
-        yield ModbusSensorDescription(
-            key=f"pq1_register_{address}",
-            addresses=[ModbusAddressesSpec(holding=[address], models=Inv.PQ1)],
-            name=f"PQ1 Register {address} (Raw)",
-            signed=False,
-            entity_category=EntityCategory.DIAGNOSTIC,
-            entity_registry_enabled_default=False,
-        )
 
 
 ENTITIES: list[EntityFactory] = sorted(

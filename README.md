@@ -22,7 +22,7 @@ Supported models:
 - FoxESS H3 (including AC3 and AOI-H3)
 - FoxESS H3 PRO
 - FoxESS P1
-- FoxESS PQ1 (read-only monitoring and experimental diagnostics)
+- FoxESS PQ1 (monitoring, remote power control and read-only schedules)
 - FoxESS KH
 - Kuara H3
 - Sonnenkraft SK-HWR
@@ -32,39 +32,26 @@ Supported models:
 - Enpal
 - 1KOMMA5°
 
-PQ1 support is based on register observations from a PQ1-8.0 using native LAN
-Modbus TCP (port 502, device ID 247), with readings compared against the Fox app.
-Grid CT, Feed-in and Grid Consumption reuse the confirmed `31049–31050` pair.
-Raw watts are positive for import and negative for export; Grid CT follows the
-integration's positive-export convention in kW, with positive directional
-Feed-in and Grid Consumption readings. Feed-in power remains experimental,
-disabled by default, along with BMS Charge Rate and BMS Discharge Rate.
-PV Power sums the four verified string readings. Load Power uses the confirmed
-`39225–39226` pair; alternative load and battery-power pairs are available as
-disabled diagnostic sensors. `39237–39238` is a battery-power comparison;
-`39248–39249` is an experimental net inverter AC output candidate. The unresolved
-`39256–39257` has an experimental reactive-power interpretation using the shared
-newer-model map, with raw words retained. `39270–39271` remains raw-only.
-Solar Generation Total/Today use the verified
-`39601–39604` pairs at 0.01 kWh per count. Verified solar, battery charge/discharge, feed-in,
-purchased-energy and load-energy counters are enabled with energy statistics.
-Battery Voltage is also confirmed and uses the shared normal sensor description.
-Battery charge/discharge energy can differ from the app; measurement boundaries
-remain unresolved, and the inverter-reported values are preserved unchanged.
-Product support remains read-only.
+PQ1 support is based on a PQ1-8.0 tested over native LAN Modbus TCP
+(port 502, device ID 247). It reuses existing mappings for four PV inputs,
+grid, load, battery, BMS and energy readings. Battery power and derived
+charge/discharge use the modern `39237–39238` pair. Basic Work Mode reads
+`49203`; the alternative `41000` reading and Export Power Limit are disabled
+by default as diagnostics. Battery remaining energy is explicitly estimated
+from nominal capacity, SOH and SOC.
 
-PQ1 readings with provisional register interpretations have an **Experimental**
-suffix and are disabled by default, along with raw register diagnostics. Enable
-these individually to compare values; experimental sensors include raw register
-attributes and do not produce long-term statistics or Energy dashboard inputs.
-Manual Work Mode reads `41000`: `0` Self Use, `1` Feed-in Priority, `2` Backup,
-`3` Peak Shaving. A diagnostic enum reads the parallel `49203` codes `1–4`.
-Unknown codes retain a `raw_value` attribute. The always-zero `31014` and the
-capacity-like `37632` are raw diagnostics rather than grid-power or remaining-
-energy sensors. Scheduler records can
-be inspected with the existing `foxess_modbus.read_registers` action in small
-holding-register reads. The generic register-write action remains available,
-but PQ1 write semantics have not been established.
+PQ1 exposes remote Force Charge/Force Discharge, requested power controls and
+Target Power Measure through the existing remote-control manager. Basic mode
+and saved schedules are not changed by these controls. Schedule Entries and
+Remaining Time provide read-only schedule viewing; Current Work Mode is
+inferred from remote control, schedules and Basic mode. The
+[example schedule card](examples/lovelace/PQ1_SCHEDULE_CARD.yaml) uses the
+built-in Markdown card. Change schedules in the FOX Cloud App.
+
+The production PQ1 profile includes no raw research entities or Experimental
+labels. The optional experimental-mapping mechanism remains available for
+contributors testing new register interpretations. Legacy charge-period
+registers `41001–41006` are not polled on PQ1.
 
 You will need a direct connection to your inverter.
 In most cases, this means buying a modbus to ethernet/USB adapter and wiring this to a port on your inverter.

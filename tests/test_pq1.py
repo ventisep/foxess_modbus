@@ -3,6 +3,7 @@
 import re
 from collections.abc import Iterator
 from collections.abc import Mapping
+from dataclasses import replace
 from datetime import datetime
 from datetime import timezone
 from typing import Any
@@ -41,6 +42,7 @@ from custom_components.foxess_modbus.entities.modbus_lambda_sensor import Modbus
 from custom_components.foxess_modbus.entities.modbus_select import ModbusSelect
 from custom_components.foxess_modbus.entities.modbus_select import ModbusSelectDescription
 from custom_components.foxess_modbus.entities.modbus_sensor import ModbusSensor
+from custom_components.foxess_modbus.entities.modbus_sensor import ModbusSensorDescription
 from custom_components.foxess_modbus.inverter_profiles import INVERTER_PROFILES
 from custom_components.foxess_modbus.inverter_profiles import inverter_connection_type_profile_from_config
 from custom_components.foxess_modbus.modbus_controller import ModbusController
@@ -235,8 +237,8 @@ def test_profile_and_entities(controller: ModbusController, sensors: dict[str, S
         factory.depends_on_other_entities for factory in ENTITIES if factory.serialize(Inv.PQ1, RegisterType.HOLDING)
     )
     addresses = {a for entity in sensors.values() for a in cast(ModbusControllerEntity, entity).addresses}
-    assert set(range(31020, 31029)) <= addresses
-    assert set(range(32000, 32024)) <= addresses
+    assert {31020, 31021, 31024, 39237, 39238} <= addresses
+    assert not addresses.intersection({31022, 31023, 31025, 31026, 31027, 31028, 32018, 32019, 32020})
     assert set(range(39601, 39605)) <= addresses
     assert {31049, 31050} <= addresses
     assert not addresses.intersection(range(41001, 41007))
@@ -273,7 +275,7 @@ async def test_poll_ranges_avoid_invalid_block(
     controller._max_read = max_read  # noqa: SLF001
     ranges = list(controller._create_read_ranges(max_read, is_initial_connection=True))  # noqa: SLF001
     polled = {a for start, count in ranges for a in range(start, start + count)}
-    assert {41000, 41007, 41008, 41009, 41010, 41011} <= polled
+    assert {41000, 49203, 41007, 41008, 41009, 41010, 41011} <= polled
     assert not polled.intersection(range(41001, 41007))
     assert all(1 <= count <= max_read for _, count in ranges)
     client = cast(AsyncMock, controller._client)  # noqa: SLF001
@@ -293,22 +295,17 @@ async def test_poll_ranges_avoid_invalid_block(
         ("invbatvolt", {31020: 4000}, 400),
         ("batvolt", {37609: 2629}, 262.9),
         ("invbatcurrent", {31021: 65521}, -1.5),
-        ("invbatpower", {31022: 64492}, -1.044),
-        ("battery_charge", {31022: 64492}, 1.044),
-        ("battery_discharge", {31022: 64492}, 0),
-        ("battery_charge", {31022: 1044}, 0),
-        ("battery_discharge", {31022: 1044}, 1.044),
-        ("battery_temp", {31023: 275}, 27.5),
-        ("battery_soc", {31024: 97, 31028: 0, 37002: 2}, 97),
-        ("bms_charge_rate", {31025: 500}, 50),
-        ("bms_discharge_rate", {31026: 500}, 50),
-        ("pq1_register_37632", {37632: 1920}, 1920),
+        ("invbatpower", {39237: 65535, 39238: 64492}, -1.044),
+        ("battery_charge", {39237: 65535, 39238: 64492}, 1.044),
+        ("battery_discharge", {39237: 65535, 39238: 64492}, 0),
+        ("battery_charge", {39237: 0, 39238: 1044}, 0),
+        ("battery_discharge", {39237: 0, 39238: 1044}, 1.044),
+        ("battery_soc", {31024: 97}, 97),
         ("battery_nominal_capacity", {37635: 1971}, 19.71),
         ("rfreq", {39139: 4991}, 49.91),
         ("max_charge_current", {41007: 500}, 50),
         ("min_soc", {41009: 10}, 10),
         ("max_soc", {41010: 100}, 100),
-        ("pq1_register_31014", {31014: 0}, 0),
         ("grid_ct", {31049: 65535, 31050: 65339}, 0.197),
         ("grid_ct", {31049: 65535, 31050: 65333}, 0.203),
         ("grid_ct", {31049: 0, 31050: 284}, -0.284),
@@ -329,17 +326,20 @@ async def test_poll_ranges_avoid_invalid_block(
         ("inv_power", {39134: 0, 39135: 1288}, 1.288),
         # Import direction uses the existing shared S32 decoder; hardware test pending.
         ("inv_power", {39134: 65535, 39135: 65036}, -0.500),
-        ("load_power_31016", {31016: 200}, 0.2),
-        ("invbatpower_39237", {39237: 65535, 39238: 65333}, -0.203),
-        ("invbatpower_39237", {39237: 0, 39238: 570}, 0.570),
-        ("invbatpower_39237", {39237: 0, 39238: 465}, 0.465),
-        ("invbatpower_39237", {39237: 0, 39238: 30}, 0.030),
-        ("invbatpower_39237", {39237: 65535, 39238: 64474}, -1.062),
-        ("invbatpower_39237", {39237: 0, 39238: 0}, 0.0),
+        ("invbatpower", {39237: 65535, 39238: 65333}, -0.203),
+        ("invbatpower", {39237: 0, 39238: 570}, 0.570),
+        ("invbatpower", {39237: 0, 39238: 465}, 0.465),
+        ("invbatpower", {39237: 0, 39238: 30}, 0.030),
+        ("invbatpower", {39237: 65535, 39238: 64474}, -1.062),
+        ("invbatpower", {39237: 0, 39238: 0}, 0.0),
+        ("invbatpower", {39237: 0, 39238: 40000}, 40.0),
+        ("invbatpower", {39237: 65535, 39238: 25536}, -40.0),
+        ("battery_charge", {39237: 65535, 39238: 25536}, 40.0),
+        ("battery_discharge", {39237: 0, 39238: 40000}, 40.0),
+        ("total_yield_today", {32017: 71}, 7.1),
+        ("total_yield_total", {32015: 1, 32016: 2}, 6553.8),
         ("rpower", {39248: 0, 39249: 412}, 0.412),
         ("rpower", {39248: 65535, 39249: 65522}, -0.014),
-        ("inv_power_Q_R", {39256: 65535, 39257: 65482}, -0.054),
-        ("inv_power_Q_R", {39256: 0, 39257: 54}, 0.054),
         ("rpower", {39248: 65535, 39249: 65455}, -0.081),
         ("rpower", {39248: 0, 39249: 548}, 0.548),
         ("rpower", {39248: 0, 39249: 708}, 0.708),
@@ -362,9 +362,6 @@ async def test_poll_ranges_avoid_invalid_block(
         ("solar_energy_total", {39601: 1, 39602: 2}, 655.38),
         ("solar_energy_today", {39603: 1, 39604: 2}, 655.38),
         ("solar_energy_today", {39603: 0, 39604: 32768}, 327.68),
-        ("pq1_register_32002", {32002: 81}, 81),
-        ("pq1_register_44000", {44000: 12}, 12),
-        ("pq1_register_31027", {31027: 65535}, 65535),
     ],
 )
 def test_decoding(
@@ -374,60 +371,50 @@ def test_decoding(
     assert numeric_value(sensors[key]) == pytest.approx(expected)
 
 
-def test_experimental_metadata_and_missing_words(
+def test_experimental_tag_remains_available_for_community_testing(
     controller: ModbusController, sensors: dict[str, SensorEntity]
 ) -> None:
-    energy = sensors["input_energy_total"]
-    set_registers(controller, {32018: None, 32019: 10})
-    assert numeric_value(energy) is None
-    assert energy.entity_description.name == "Input Energy Total (Experimental)"
-    assert energy.entity_description.entity_category == EntityCategory.DIAGNOSTIC
-    assert energy.entity_description.entity_registry_enabled_default is False
-    assert energy.entity_description.state_class is None
-    assert energy.extra_state_attributes == {
+    description = cast(ModbusSensorDescription, sensors["invbatpower"].entity_description)
+    experimental = replace(description, experimental_models=Inv.PQ1)
+    sensor = experimental.create_entity_if_supported(controller, Inv.PQ1, RegisterType.HOLDING)
+    assert isinstance(sensor, ModbusSensor)
+    set_registers(controller, {39237: None, 39238: 10})
+    assert numeric_value(sensor) is None
+    assert sensor.entity_description.name == "Inverter Battery Power (Experimental)"
+    assert sensor.entity_description.entity_category == EntityCategory.DIAGNOSTIC
+    assert sensor.entity_description.entity_registry_enabled_default is False
+    assert sensor.entity_description.state_class is None
+    assert sensor.extra_state_attributes == {
         "mapping_status": "provisional",
-        "raw_registers": {"32019": 10, "32018": None},
+        "raw_registers": {"39238": 10, "39237": None},
     }
-    assert sensors["battery_temp"].entity_description.name == "Battery Temp (Experimental)"
-    reactive = sensors["inv_power_Q_R"]
-    set_registers(controller, {39256: 65535, 39257: 65482})
-    assert reactive.entity_description.name == "Inverter Power (Reactive) R (Experimental)"
-    assert reactive.native_unit_of_measurement == "kvar"
-    assert reactive.entity_description.entity_category == EntityCategory.DIAGNOSTIC
-    assert not reactive.entity_description.entity_registry_enabled_default
-    assert reactive.entity_description.state_class is None
-    assert reactive.extra_state_attributes == {
-        "mapping_status": "provisional",
-        "raw_registers": {"39257": 65482, "39256": 65535},
-    }
-    assert sensors["battery_soc"].entity_description.name == "Battery SoC"
-    assert sensors["battery_soc"].extra_state_attributes is None
-    assert sensors["pq1_register_44000"].entity_description.entity_registry_enabled_default is False
+    serialized = experimental.serialize(Inv.PQ1, RegisterType.HOLDING)
+    assert serialized is not None
+    assert serialized["experimental"] is True
+    assert not str(description.name).endswith("(Experimental)")
 
 
 def test_battery_state_does_not_use_unverified_connection_flags(
     controller: ModbusController, sensors: dict[str, SensorEntity]
 ) -> None:
-    set_registers(controller, {31024: 97, 31028: 0, 37002: 2})
+    set_registers(controller, {31024: 97})
     sensor = sensors["battery_soc"]
     with patch.object(sensor, "schedule_update_ha_state"):
         cast(ModbusControllerEntity, sensor).update_callback({31024})
     assert sensor.native_value == 97
 
 
-def test_experimental_settings_do_not_leak_to_p1(
-    controller: ModbusController, sensors: dict[str, SensorEntity]
-) -> None:
+def test_production_cleanup_does_not_remove_p1_readings(controller: ModbusController) -> None:
     profile = INVERTER_PROFILES[InverterModel.P1].connection_types[ConnectionType.AUX]
     p1_sensors = {
         entity.entity_description.key: cast(SensorEntity, entity)
         for entity in profile.create_entities(SensorEntity, controller, filter_depends_on_other_entites=False)
     }
-    for key in ("input_energy_total", "battery_temp", "feed_in"):
-        assert str(sensors[key].entity_description.name).endswith("(Experimental)")
+    for key in ("input_energy_total", "battery_temp", "feed_in", "bms_charge_rate", "total_yield_total"):
         assert not str(p1_sensors[key].entity_description.name).endswith("(Experimental)")
-        assert p1_sensors[key].entity_description.entity_registry_enabled_default
+        assert p1_sensors[key].entity_description.entity_registry_enabled_default == (key != "bms_charge_rate")
         assert p1_sensors[key].entity_description.state_class is not None
+    assert p1_sensors["total_yield_total"].entity_description.name == "Yield Total"
 
 
 @pytest.mark.parametrize(
@@ -441,11 +428,14 @@ def test_experimental_settings_do_not_leak_to_p1(
         "pv3_power",
         "pv4_power",
         "load_power",
-        "invbatpower_39237",
+        "invbatpower",
         "rpower",
         "inv_power",
         "grid_ct",
         "grid_consumption",
+        "feed_in",
+        "total_yield_today",
+        "total_yield_total",
         "battery_charge_total",
         "battery_charge_today",
         "battery_discharge_total",
@@ -468,20 +458,29 @@ def test_confirmed_sensors_are_enabled_with_statistics(sensors: dict[str, Sensor
     assert description.state_class is not None
 
 
-@pytest.mark.parametrize("key", ["bms_charge_rate", "bms_discharge_rate", "feed_in"])
-def test_unconfirmed_pr1_readings_remain_experimental(sensors: dict[str, SensorEntity], key: str) -> None:
-    description = sensors[key].entity_description
-    assert str(description.name).endswith("(Experimental)")
-    assert not description.entity_registry_enabled_default
-    assert description.entity_category == EntityCategory.DIAGNOSTIC
-    assert description.state_class is None
-
-
-@pytest.mark.parametrize("key", ["load_power_31016"])
-def test_duplicate_power_pairs_are_optional_diagnostics(sensors: dict[str, SensorEntity], key: str) -> None:
-    description = sensors[key].entity_description
-    assert description.entity_category == EntityCategory.DIAGNOSTIC
-    assert not description.entity_registry_enabled_default
+def test_production_entities_have_no_experimental_or_raw_readings(sensors: dict[str, SensorEntity]) -> None:
+    for sensor in sensors.values():
+        assert not str(sensor.entity_description.name).endswith("(Experimental)")
+        assert not sensor.entity_description.key.startswith("pq1_register_")
+    removed = {
+        "invbatpower_39237",
+        "load_power_31016",
+        "input_energy_today",
+        "input_energy_total",
+        "battery_temp",
+        "bat_current",
+        "bms_charge_rate",
+        "bms_discharge_rate",
+        "inv_power_Q_R",
+        "manual_work_mode_49203",
+    }
+    assert removed.isdisjoint(sensors)
+    for key in ("export_power_limit", "manual_work_mode_41000"):
+        assert sensors[key].entity_description.entity_category == EntityCategory.DIAGNOSTIC
+        assert not sensors[key].entity_description.entity_registry_enabled_default
+    assert sensors["manual_work_mode"].entity_description.name == "Basic Work Mode"
+    assert sensors["total_yield_today"].entity_description.name == "Inverter AC Output Energy Today"
+    assert sensors["total_yield_total"].entity_description.name == "Inverter AC Output Energy Total"
 
 
 @pytest.mark.parametrize(
@@ -490,7 +489,7 @@ def test_duplicate_power_pairs_are_optional_diagnostics(sensors: dict[str, Senso
         ("load_power", {39225: None, 39226: 203}),
         ("inv_power", {39134: 0, 39135: None}),
         ("inv_power", {39134: None, 39135: 1288}),
-        ("invbatpower_39237", {39237: None, 39238: 570}),
+        ("invbatpower", {39237: None, 39238: 570}),
         ("rpower", {39248: 65535, 39249: None}),
         ("solar_energy_total", {39601: None, 39602: 9220}),
         ("solar_energy_total", {39601: 0, 39602: None}),
@@ -500,8 +499,6 @@ def test_duplicate_power_pairs_are_optional_diagnostics(sensors: dict[str, Senso
         ("grid_ct", {31049: 0, 31050: None}),
         ("feed_in", {31049: None, 31050: 65333}),
         ("grid_consumption", {31049: 0, 31050: None}),
-        ("inv_power_Q_R", {39256: None, 39257: 65482}),
-        ("inv_power_Q_R", {39256: 65535, 39257: None}),
     ],
 )
 def test_duplicate_pairs_require_both_words(
@@ -568,19 +565,28 @@ def test_enum_serialization_does_not_mutate_mode_map(
     assert isinstance(description, ModbusEnumSensorDescription)
     serialized = description.serialize(Inv.PQ1, RegisterType.HOLDING)
     assert serialized is not None
-    serialized["options_map"]["0"] = serialized["options_map"].pop(0)
-    set_registers(controller, {41000: 0})
+    serialized["options_map"]["1"] = serialized["options_map"].pop(1)
+    set_registers(controller, {49203: 1})
     assert sensors["manual_work_mode"].native_value == "Self Use"
 
 
 @pytest.mark.parametrize(
     ("value", "label"),
-    [(0, "Self Use"), (1, "Feed-in Priority"), (2, "Backup"), (3, "Peak Shaving"), (6, None), (12, None), (None, None)],
+    [
+        (1, "Self Use"),
+        (2, "Feed-in Priority"),
+        (3, "Backup"),
+        (4, "Peak Shaving"),
+        (0, None),
+        (6, None),
+        (12, None),
+        (None, None),
+    ],
 )
 def test_manual_mode_preserves_unknown_codes(
     controller: ModbusController, sensors: dict[str, SensorEntity], value: int | None, label: str | None
 ) -> None:
-    set_registers(controller, {41000: value})
+    set_registers(controller, {49203: value})
     assert sensors["manual_work_mode"].native_value == label
     assert sensors["manual_work_mode"].extra_state_attributes == {"raw_value": value}
 
@@ -594,10 +600,10 @@ def test_manual_mode_encodings_remain_independent(
 ) -> None:
     set_registers(controller, {41000: legacy, 49203: newer})
     assert sensors["manual_work_mode"].native_value == label
-    assert sensors["manual_work_mode_49203"].native_value == label
+    assert sensors["manual_work_mode_41000"].native_value == label
     set_registers(controller, {49203: 0})
-    assert sensors["manual_work_mode_49203"].native_value is None
-    assert sensors["manual_work_mode_49203"].extra_state_attributes == {"raw_value": 0}
+    assert sensors["manual_work_mode"].native_value is None
+    assert sensors["manual_work_mode"].extra_state_attributes == {"raw_value": 0}
 
 
 @pytest.mark.parametrize(("value", "expected"), [(0, False), (1, True), (2, None), (12, None), (None, None)])
@@ -662,7 +668,7 @@ def mode_snapshot(controller: ModbusController, code: int = 6, after_soc: int = 
     fallback = manager._decode_record(48020, [1, 0, 5947, 1, 25610, 10, 0, 0, 0, 1])  # noqa: SLF001
     stamp = datetime(2026, 10, 8, 8, 0, tzinfo=timezone.utc)
     manager.snapshot = ScheduleSnapshot([record], fallback, stamp, stamp)
-    set_registers(controller, {46001: 12, 48000: 1, 41000: 0, 31024: 30})
+    set_registers(controller, {46001: 12, 48000: 1, 41000: 0, 49203: 1, 31024: 30})
 
 
 def mode_clock(hour: int = 8, minute: int = 30) -> Any:
@@ -673,12 +679,12 @@ def mode_clock(hour: int = 8, minute: int = 30) -> Any:
 
 
 @pytest.mark.parametrize(
-    "raw, expected", [(0, "Self Use"), (1, "Feed-in Priority"), (2, "Back-up"), (3, "Peak Shaving")]
+    "raw, expected", [(1, "Self Use"), (2, "Feed-in Priority"), (3, "Back-up"), (4, "Peak Shaving")]
 )
 def test_current_manual_mode_without_schedule_snapshot(
     controller: ModbusController, current_mode: ModbusCurrentWorkModeSensor, raw: int, expected: str
 ) -> None:
-    set_registers(controller, {46001: 12, 48000: 0, 41000: raw})
+    set_registers(controller, {46001: 12, 48000: 0, 49203: raw})
     assert current_mode.native_value == expected
     assert current_mode.extra_state_attributes["source"] == "manual"
     assert current_mode.extra_state_attributes["inferred"] is True
