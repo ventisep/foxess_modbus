@@ -22,7 +22,9 @@ from .entities.charge_period_descriptions import CHARGE_PERIODS
 from .entities.entity_descriptions import ENTITIES
 from .entities.modbus_charge_period_config import ModbusChargePeriodInfo
 from .entities.modbus_remote_control_config import ModbusRemoteControlAddressConfig
+from .entities.modbus_schedule_config import ModbusScheduleAddressConfig
 from .entities.remote_control_description import REMOTE_CONTROL_DESCRIPTION
+from .entities.schedule_descriptions import SCHEDULE_DESCRIPTION
 
 _LOGGER = logging.getLogger(__package__)
 
@@ -218,6 +220,10 @@ class InverterModelConnectionTypeProfile:
                 result.append(charge_period)
 
         return result
+
+    def create_schedule_config(self, controller: EntityController) -> ModbusScheduleAddressConfig | None:
+        """Resolve scheduler support through the existing model/firmware profile."""
+        return SCHEDULE_DESCRIPTION.create_if_supported(self._get_inv(controller), self.register_type)
 
     def create_remote_control_config(self, controller: EntityController) -> ModbusRemoteControlAddressConfig | None:
         return REMOTE_CONTROL_DESCRIPTION.create_if_supported(controller, self._get_inv(controller), self.register_type)

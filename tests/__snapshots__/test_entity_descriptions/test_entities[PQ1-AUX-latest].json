@@ -1150,6 +1150,14 @@
     "type": "sensor"
   },
   {
+    "first_record_address": 48010,
+    "key": "remaining_time",
+    "max_records": 96,
+    "name": "Remaining Time",
+    "record_size": 10,
+    "type": "schedule"
+  },
+  {
     "addresses": [
       46001
     ],
@@ -1194,6 +1202,14 @@
     "scale": 0.1,
     "signed": false,
     "type": "sensor"
+  },
+  {
+    "first_record_address": 48010,
+    "key": "schedule_entries",
+    "max_records": 96,
+    "name": "Schedule Entries",
+    "record_size": 10,
+    "type": "schedule"
   },
   {
     "addresses": [

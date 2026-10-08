@@ -4,12 +4,16 @@ import logging
 from abc import ABC
 from abc import abstractmethod
 from enum import Enum
+from typing import TYPE_CHECKING
 from typing import Any
 
 from homeassistant.core import HomeAssistant
 
 from .types import RegisterPollType
 from .types import RegisterType
+
+if TYPE_CHECKING:
+    from ..schedule_reader_manager import ScheduleReaderManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -104,6 +108,11 @@ class EntityController(ABC):
     @abstractmethod
     def remote_control_manager(self) -> EntityRemoteControlManager | None:
         """Fetch the remote control manager, if any"""
+
+    @property
+    def schedule_reader_manager(self) -> "ScheduleReaderManager | None":
+        """Optional record-based scheduler capability; legacy controllers have none."""
+        return None
 
     @property
     @abstractmethod

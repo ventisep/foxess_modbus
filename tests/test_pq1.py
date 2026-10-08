@@ -615,3 +615,28 @@ def test_firmware(
     key = {36001: "master_version", 36002: "slave_version", 36003: "manager_version"}[register]
     set_registers(controller, {register: raw})
     assert sensors[key].native_value == decoded
+
+
+async def test_schedule_reader_runs_after_remote_control(controller: ModbusController) -> None:
+    """Schedule requests share the poll lifecycle and cannot precede watchdog maintenance."""
+    manager = controller.schedule_reader_manager
+    remote = controller.remote_control_manager
+    assert manager is not None
+    assert remote is not None
+    order = []
+
+    async def remote_callback() -> None:
+        assert not manager._ready.is_set()  # noqa: SLF001
+        order.append("remote")
+
+    async def schedule_callback() -> None:
+        assert manager._ready.is_set()  # noqa: SLF001
+        order.append("schedule")
+
+    with (
+        patch.object(controller, "_read_all_registers", AsyncMock(return_value=[])),
+        patch.object(remote, "poll_complete_callback", remote_callback),
+        patch.object(manager, "poll_complete_callback", schedule_callback),
+    ):
+        await controller._refresh(None)  # type: ignore[arg-type] # noqa: SLF001
+    assert order == ["remote", "schedule"]

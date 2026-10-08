@@ -39,6 +39,7 @@ from .modbus_sensor import ModbusSensorDescription
 from .modbus_version_sensor import ModbusVersionSensorDescription
 from .modbus_work_mode_select import ModbusWorkModeSelectDescription
 from .remote_control_description import REMOTE_CONTROL_DESCRIPTION
+from .schedule_descriptions import SCHEDULE_DESCRIPTION
 from .validation import Min
 from .validation import Range
 
@@ -3083,6 +3084,7 @@ ENTITIES: list[EntityFactory] = sorted(
         _pq1_entities(),
         (description for x in CHARGE_PERIODS for description in x.entity_descriptions),
         REMOTE_CONTROL_DESCRIPTION.entity_descriptions,
+        SCHEDULE_DESCRIPTION.entity_descriptions,
     ),
     key=lambda x: x.depends_on_other_entities,
 )
