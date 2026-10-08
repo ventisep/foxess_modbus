@@ -47,6 +47,15 @@ class RemoteControlManager(EntityRemoteControlManager, ModbusControllerEntity):
     def mode(self) -> RemoteControlMode:
         return self._mode
 
+    @property
+    def active_mode(self) -> RemoteControlMode:
+        # A requested mode can remain selected after SOC cut-off or failed enable.
+        # Use the last completed update, so a failed direction change cannot
+        # masquerade as an applied command. The enable must also have succeeded.
+        if self._remote_control_enabled and self._controller.is_connected:
+            return self._prev_mode
+        return RemoteControlMode.DISABLE
+
     async def set_mode(self, mode: RemoteControlMode) -> None:
         if self._mode != mode:
             self._mode = mode

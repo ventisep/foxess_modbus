@@ -3,6 +3,9 @@
 import re
 from collections.abc import Iterator
 from collections.abc import Mapping
+from datetime import datetime
+from datetime import timezone
+from typing import Any
 from typing import cast
 from unittest.mock import AsyncMock
 from unittest.mock import patch
@@ -17,6 +20,7 @@ from homeassistant.helpers.entity import EntityCategory
 
 from custom_components.foxess_modbus.client.modbus_client import ModbusClient
 from custom_components.foxess_modbus.common.entity_controller import ModbusControllerEntity
+from custom_components.foxess_modbus.common.entity_controller import RemoteControlMode
 from custom_components.foxess_modbus.common.exceptions import AutoconnectFailedError
 from custom_components.foxess_modbus.common.types import ConnectionType
 from custom_components.foxess_modbus.common.types import Inv
@@ -31,6 +35,7 @@ from custom_components.foxess_modbus.const import MAX_READ
 from custom_components.foxess_modbus.const import UNIQUE_ID_PREFIX
 from custom_components.foxess_modbus.entities.entity_descriptions import ENTITIES
 from custom_components.foxess_modbus.entities.inverter_model_spec import ModbusAddressSpec
+from custom_components.foxess_modbus.entities.modbus_current_work_mode_sensor import ModbusCurrentWorkModeSensor
 from custom_components.foxess_modbus.entities.modbus_enum_sensor import ModbusEnumSensorDescription
 from custom_components.foxess_modbus.entities.modbus_lambda_sensor import ModbusLambdaSensor
 from custom_components.foxess_modbus.entities.modbus_select import ModbusSelect
@@ -235,7 +240,7 @@ def test_profile_and_entities(controller: ModbusController, sensors: dict[str, S
     assert set(range(39601, 39605)) <= addresses
     assert {31049, 31050} <= addresses
     assert not addresses.intersection(range(41001, 41007))
-    assert not addresses.intersection({39118, 44003, 46001, 37700, 38307, 38914, 39605})
+    assert not addresses.intersection({39118, 44003, 37700, 38307, 38914, 39605})
     assert not addresses.intersection(range(48010, 48970))
     assert isinstance(sensors["pv_power_now"], ModbusLambdaSensor)
     assert cast(ModbusControllerEntity, sensors["load_power"]).addresses == [39226, 39225]
@@ -640,3 +645,181 @@ async def test_schedule_reader_runs_after_remote_control(controller: ModbusContr
     ):
         await controller._refresh(None)  # type: ignore[arg-type] # noqa: SLF001
     assert order == ["remote", "schedule"]
+
+
+@pytest.fixture
+def current_mode(sensors: dict[str, SensorEntity]) -> ModbusCurrentWorkModeSensor:
+    return cast(ModbusCurrentWorkModeSensor, sensors["current_work_mode"])
+
+
+def mode_snapshot(controller: ModbusController, code: int = 6, after_soc: int = 1, enabled: int = 1) -> None:
+    """A saved 08:00-09:00 forced period followed by Remaining Time."""
+    from custom_components.foxess_modbus.schedule_reader_manager import ScheduleSnapshot
+
+    manager = controller.schedule_reader_manager
+    assert manager is not None
+    record = manager._decode_record(48010, [enabled, 2048, 2304, code, 25610, 45, 8000, 0, after_soc, 1])  # noqa: SLF001
+    fallback = manager._decode_record(48020, [1, 0, 5947, 1, 25610, 10, 0, 0, 0, 1])  # noqa: SLF001
+    stamp = datetime(2026, 10, 8, 8, 0, tzinfo=timezone.utc)
+    manager.snapshot = ScheduleSnapshot([record], fallback, stamp, stamp)
+    set_registers(controller, {46001: 12, 48000: 1, 41000: 0, 31024: 30})
+
+
+def mode_clock(hour: int = 8, minute: int = 30) -> Any:
+    return patch(
+        "custom_components.foxess_modbus.entities.modbus_current_work_mode_sensor.dt_util.now",
+        return_value=datetime(2026, 10, 8, hour, minute, tzinfo=timezone.utc),
+    )
+
+
+@pytest.mark.parametrize(
+    "raw, expected", [(0, "Self Use"), (1, "Feed-in Priority"), (2, "Back-up"), (3, "Peak Shaving")]
+)
+def test_current_manual_mode_without_schedule_snapshot(
+    controller: ModbusController, current_mode: ModbusCurrentWorkModeSensor, raw: int, expected: str
+) -> None:
+    set_registers(controller, {46001: 12, 48000: 0, 41000: raw})
+    assert current_mode.native_value == expected
+    assert current_mode.extra_state_attributes["source"] == "manual"
+    assert current_mode.extra_state_attributes["inferred"] is True
+
+
+@pytest.mark.parametrize(
+    "code, soc, met, after_soc, behavior",
+    [
+        (6, 44, False, 1, None),
+        (6, 45, True, 1, "Standby"),
+        (6, 80, True, 3, "Resume Work Mode"),
+        (7, 46, False, 1, None),
+        (7, 45, True, 1, "Standby"),
+        (7, 10, True, 3, "Resume Work Mode"),
+    ],
+)
+def test_current_scheduled_mode_keeps_label_and_reports_soc_fallback(
+    controller: ModbusController,
+    current_mode: ModbusCurrentWorkModeSensor,
+    code: int,
+    soc: int,
+    met: bool,
+    after_soc: int,
+    behavior: str | None,
+) -> None:
+    mode_snapshot(controller, code, after_soc)
+    set_registers(controller, {31024: soc})
+    with mode_clock():
+        assert current_mode.native_value == ("Force Charge" if code == 6 else "Force Discharge")
+        attrs = current_mode.extra_state_attributes
+    assert attrs["soc_cutoff_met"] is met
+    assert attrs["fallback_in_operation"] is met
+    assert attrs.get("after_soc_behavior") == behavior
+    if met:
+        assert attrs["fallback_work_mode"] == ("Standby" if after_soc == 1 else None)
+
+
+@pytest.mark.parametrize("enabled, hour", [(0, 8), (1, 10)])
+def test_current_remaining_time_ignores_inactive_or_outside_period(
+    controller: ModbusController, current_mode: ModbusCurrentWorkModeSensor, enabled: int, hour: int
+) -> None:
+    mode_snapshot(controller, enabled=enabled)
+    with mode_clock(hour):
+        assert current_mode.native_value == "Self Use"
+        assert current_mode.extra_state_attributes["source"] == "remaining_time"
+        assert current_mode.extra_state_attributes["fallback_in_operation"] is None
+
+
+def test_feed_in_priority_does_not_infer_standby_from_plus8(
+    controller: ModbusController, current_mode: ModbusCurrentWorkModeSensor
+) -> None:
+    mode_snapshot(controller, code=2, after_soc=1)
+    set_registers(controller, {31024: 100})
+    with mode_clock():
+        assert current_mode.native_value == "Feed-in Priority"
+        assert current_mode.extra_state_attributes["soc_cutoff_met"] is None
+    manager = controller.schedule_reader_manager
+    assert manager is not None and manager.snapshot is not None
+    assert manager.snapshot.entries[0]["after_soc_applicable"] is False
+    assert manager.snapshot.entries[0]["after_soc_behavior"] == "Not Applicable"
+    assert manager.snapshot.remaining_time["after_soc_raw"] == 0
+    assert manager.snapshot.remaining_time["after_soc_applicable"] is False
+
+
+def test_current_mode_unknown_inputs_and_failed_scan(
+    controller: ModbusController, current_mode: ModbusCurrentWorkModeSensor
+) -> None:
+    assert current_mode.native_value is None
+    mode_snapshot(controller)
+    set_registers(controller, {31024: None})
+    with mode_clock():
+        assert current_mode.native_value == "Force Charge"
+        assert "Battery SOC unavailable" in current_mode.extra_state_attributes["reason"]
+        assert current_mode.extra_state_attributes["fallback_in_operation"] is None
+    manager = controller.schedule_reader_manager
+    assert manager is not None
+    manager.error = "Failed scan"
+    assert current_mode.native_value is None
+    assert current_mode.extra_state_attributes["reason"] == "Failed scan"
+    set_registers(controller, {48000: 2})
+    assert current_mode.native_value is None
+
+
+@pytest.mark.parametrize("requested", [RemoteControlMode.FORCE_CHARGE, RemoteControlMode.FORCE_DISCHARGE])
+def test_current_remote_mode_requires_enable_and_takes_priority(
+    controller: ModbusController, current_mode: ModbusCurrentWorkModeSensor, requested: RemoteControlMode
+) -> None:
+    mode_snapshot(controller)
+    remote = controller.remote_control_manager
+    assert remote is not None
+    with patch.object(remote, "_mode", requested):
+        assert remote.active_mode == RemoteControlMode.DISABLE
+        with (
+            patch.object(remote, "_remote_control_enabled", True),
+            patch.object(remote, "_prev_mode", requested),
+        ):
+            set_registers(controller, {46001: 13})
+            assert current_mode.native_value == (
+                "Force Charge" if requested == RemoteControlMode.FORCE_CHARGE else "Force Discharge"
+            )
+            assert current_mode.extra_state_attributes["source"] == "remote_control"
+        # An external enable cannot be assigned the integration's requested mode.
+        assert current_mode.native_value == "Remote Control"
+        assert "not known" in current_mode.extra_state_attributes["reason"]
+    set_registers(controller, {46001: 12, 48000: 0})
+    assert current_mode.native_value == "Self Use"
+
+
+def test_overlapping_periods_are_ambiguous(
+    controller: ModbusController, current_mode: ModbusCurrentWorkModeSensor
+) -> None:
+    mode_snapshot(controller)
+    manager = controller.schedule_reader_manager
+    assert manager is not None and manager.snapshot is not None
+    manager.snapshot.entries.append(dict(manager.snapshot.entries[0], register_address=48020))
+    with mode_clock():
+        assert current_mode.native_value is None
+        assert current_mode.extra_state_attributes["matching_record_addresses"] == [48010, 48020]
+
+
+async def test_current_mode_updates_on_poll_and_schedule_refresh(
+    controller: ModbusController, current_mode: ModbusCurrentWorkModeSensor
+) -> None:
+    manager = controller.schedule_reader_manager
+    assert manager is not None
+    with patch.object(current_mode, "schedule_update_ha_state") as update:
+        await current_mode.async_added_to_hass()
+        cast(ModbusControllerEntity, current_mode).update_callback(set())
+        manager._notify()  # noqa: SLF001
+        assert update.call_count == 2
+        await current_mode.async_will_remove_from_hass()
+        manager._notify()  # noqa: SLF001
+        assert update.call_count == 2
+
+
+def test_remote_active_mode_retains_last_completed_direction_on_failed_change(controller: ModbusController) -> None:
+    remote = controller.remote_control_manager
+    assert remote is not None
+    with (
+        patch.object(remote, "_remote_control_enabled", True),
+        patch.object(remote, "_prev_mode", RemoteControlMode.FORCE_CHARGE),
+        patch.object(remote, "_mode", RemoteControlMode.FORCE_DISCHARGE),
+    ):
+        assert remote.active_mode == RemoteControlMode.FORCE_CHARGE

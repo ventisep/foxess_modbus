@@ -197,6 +197,17 @@
   },
   {
     "addresses": [
+      41000,
+      48000,
+      31024,
+      46001
+    ],
+    "key": "current_work_mode",
+    "name": "Current Work Mode",
+    "type": "current-work-mode"
+  },
+  {
+    "addresses": [
       31010
     ],
     "key": "eps_rvolt",

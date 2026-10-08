@@ -56,6 +56,11 @@ class EntityRemoteControlManager(ABC):
         """Set the current mode"""
 
     @property
+    def active_mode(self) -> RemoteControlMode:
+        """An applied remote mode, distinct from the requested selection."""
+        return RemoteControlMode.DISABLE
+
+    @property
     @abstractmethod
     def charge_power(self) -> int | None:
         """Get the current charge power"""

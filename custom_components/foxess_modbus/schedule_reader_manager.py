@@ -83,6 +83,18 @@ class ScheduleReaderManager:
         max_soc, min_soc = words[4] >> 8, words[4] & 0xFF
         if not 0 <= min_soc <= max_soc <= 100 or words[5] > 100:
             raise ValueError(f"Invalid schedule SOC at {address}")
+        mode_config = self._config.current_work_mode
+        is_remaining = words[1] == 0 and words[2] == (23 << 8 | 59)
+        after_soc_applicable = None
+        after_soc_behavior = "Unknown"
+        if mode_config is not None:
+            if is_remaining or words[3] in mode_config.after_soc_not_applicable_modes:
+                after_soc_applicable = False
+                after_soc_behavior = "Not Applicable"
+            elif words[3] in (mode_config.force_charge_mode, mode_config.force_discharge_mode):
+                after_soc_applicable = True
+                after_soc_behavior = mode_config.after_soc_map.get(words[8], f"Unknown ({words[8]})")
+            # App availability has not been checked for every other main mode.
         return {
             "register_address": address,
             "enabled": bool(words[0]),
@@ -94,8 +106,13 @@ class ScheduleReaderManager:
             "max_soc": max_soc,
             "mode_soc": words[5],
             "power_w": words[6],
-            # Keep +7/+8/+9 uninterpreted: after-cutoff/grid-charge meanings
-            # are not established for every mode, especially Remaining Time.
+            # +8 is mode-dependent: Feed-in Priority can store 1 without an
+            # app option, and Remaining Time stores 0. Value 3 does not identify
+            # which of Self Use, Feed-in Priority or Back-up resumes.
+            "after_soc_applicable": after_soc_applicable,
+            "after_soc_behavior": after_soc_behavior,
+            "after_soc_raw": words[8],
+            # +7/+9 remain unresolved; always retain all original words.
             "raw_registers": list(words),
         }
 

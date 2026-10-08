@@ -63,7 +63,7 @@ class ModbusScheduleSensor(ModbusEntityMixin, SensorEntity):
     @property
     def addresses(self) -> list[int]:
         # Dynamic schedule reads are deliberately excluded from normal telemetry
-        # subscriptions. The manager scans only the established first bank.
+        # subscriptions. The manager scans only the configured range through Remaining Time.
         return []
 
     @property
