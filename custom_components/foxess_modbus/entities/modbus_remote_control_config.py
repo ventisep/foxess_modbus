@@ -51,6 +51,8 @@ class ModbusRemoteControlAddressConfig:
     """Array of pvx_voltage addresses for PV strings"""
     remote_enable_mask: int | None = None
     """Optional holding-register enable bit mask; preserve all other bits when toggling remote control."""
+    restore_timeout: bool = False
+    """Save the holding-register watchdog timeout and restore it after disabling control."""
 
 
 class RemoteControlAddressSpec:

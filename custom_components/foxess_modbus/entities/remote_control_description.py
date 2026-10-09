@@ -29,6 +29,7 @@ REMOTE_CONTROL_DESCRIPTION = ModbusRemoteControlFactory(
                 pwr_limit_bat_up=None,
                 pv_voltages=[39070, 39072, 39074, 39076],
                 remote_enable_mask=0x0001,
+                restore_timeout=True,
             ),
             models=Inv.PQ1,
         ),

@@ -51,6 +51,9 @@ def controller() -> MagicMock:
         (39238, 39237): 620,
     }.get(tuple(address) if isinstance(address, list) else address)
     result.read_registers = AsyncMock(return_value=[12])
+    result.read_registers.side_effect = (
+        lambda address, *_: [60] if address == 46002 else result.read_registers.return_value
+    )
     return result
 
 
@@ -75,13 +78,16 @@ async def test_pq1_charge_and_disable_preserve_fresh_bits(controller: MagicMock,
     await manager.set_mode(RemoteControlMode.FORCE_CHARGE)
     assert controller.write_register.await_args_list == [call(46002, 20), call(46001, 13)]
     controller.write_registers.assert_awaited_once_with(46003, [65535, 64936])
-    controller.read_registers.assert_awaited_once_with(46001, 1, RegisterType.HOLDING)
+    assert controller.read_registers.await_args_list == [
+        call(46002, 1, RegisterType.HOLDING),
+        call(46001, 1, RegisterType.HOLDING),
+    ]
 
     # Preserve a different target, direction and upper bits changed since enabling.
     controller.read_registers.return_value = [0x800B]
     await manager.set_mode(RemoteControlMode.DISABLE)
-    assert controller.write_register.await_args_list[-1] == call(46001, 0x800A)
-    assert controller.read_registers.await_count == 2
+    assert controller.write_register.await_args_list[-2:] == [call(46001, 0x800A), call(46002, 60)]
+    assert controller.read_registers.await_count == 3
     assert all(c.args[0] not in {41000, 49203, 48000} for c in controller.write_register.await_args_list)
 
 
@@ -98,7 +104,7 @@ async def test_pq1_soc_cutoff(controller: MagicMock, manager: RemoteControlManag
     await manager.set_mode(RemoteControlMode.FORCE_CHARGE)
     controller.read.side_effect = lambda address, **_: 100 if address in (31024, 41010) else None
     await manager.poll_complete_callback()
-    assert controller.write_register.await_args_list[-1] == call(46001, 12)
+    assert controller.write_register.await_args_list[-2:] == [call(46001, 12), call(46002, 60)]
     assert controller.write_registers.await_count == 1
 
 
@@ -122,13 +128,91 @@ async def test_failed_disable_retries(controller: MagicMock, manager: RemoteCont
     controller.write_register.side_effect = OSError("write failed")
     with pytest.raises(OSError, match="write failed"):
         await manager.set_mode(RemoteControlMode.DISABLE)
+    # Never extend the watchdog while control may still be enabled.
+    assert call(46002, 60) not in controller.write_register.await_args_list
     controller.write_register.side_effect = None
     await manager.poll_complete_callback()
-    assert controller.write_register.await_args_list[-1] == call(46001, 12)
+    assert controller.write_register.await_args_list[-2:] == [call(46001, 12), call(46002, 60)]
+
+
+@pytest.mark.parametrize("original_timeout", [0, 90, 65535])
+async def test_restore_actual_timeout_across_mode_change_and_reconnect(
+    controller: MagicMock, manager: RemoteControlManager, original_timeout: int
+) -> None:
+    controller.read_registers.side_effect = lambda address, *_: [original_timeout] if address == 46002 else [12]
+    await manager.set_mode(RemoteControlMode.FORCE_CHARGE)
+    await manager.set_mode(RemoteControlMode.FORCE_DISCHARGE)
+    controller.is_connected = False
+    await manager.poll_complete_callback()
+    controller.is_connected = True
+    await manager.became_connected_callback()
+    await manager.set_mode(RemoteControlMode.DISABLE)
+    assert controller.write_register.await_args_list[-2:] == [call(46001, 12), call(46002, original_timeout)]
+    assert controller.read_registers.await_args_list.count(call(46002, 1, RegisterType.HOLDING)) == 1
+
+    # A new session takes a new snapshot rather than reusing the old saved value.
+    controller.read_registers.side_effect = lambda address, *_: [45] if address == 46002 else [12]
+    await manager.set_mode(RemoteControlMode.FORCE_DISCHARGE)
+    await manager.set_mode(RemoteControlMode.DISABLE)
+    assert controller.write_register.await_args_list[-1] == call(46002, 45)
+
+
+@pytest.mark.parametrize("words", [[], [60, 0], [-1], [65536]])
+async def test_invalid_timeout_read_does_not_enable(
+    controller: MagicMock, manager: RemoteControlManager, words: list[int]
+) -> None:
+    controller.read_registers.side_effect = None
+    controller.read_registers.return_value = words
+    with pytest.raises(ValueError, match="Remote timeout register"):
+        await manager.set_mode(RemoteControlMode.FORCE_DISCHARGE)
+    controller.write_register.assert_not_awaited()
+    controller.write_registers.assert_not_awaited()
+
+
+async def test_timeout_read_error_does_not_enable(controller: MagicMock, manager: RemoteControlManager) -> None:
+    controller.read_registers.side_effect = OSError("read failed")
+    with pytest.raises(OSError, match="read failed"):
+        await manager.set_mode(RemoteControlMode.FORCE_DISCHARGE)
+    controller.write_register.assert_not_awaited()
+    controller.write_registers.assert_not_awaited()
+
+
+async def test_failed_timeout_restore_retries_without_reenabling(
+    controller: MagicMock, manager: RemoteControlManager
+) -> None:
+    await manager.set_mode(RemoteControlMode.FORCE_DISCHARGE)
+
+    def fail_restore(address: int, value: int) -> None:
+        if (address, value) == (46002, 60):
+            raise OSError("restore failed")
+
+    controller.write_register.side_effect = fail_restore
+    with pytest.raises(OSError, match="restore failed"):
+        await manager.set_mode(RemoteControlMode.DISABLE)
+    assert manager.active_mode == RemoteControlMode.DISABLE
+    controller.write_register.side_effect = None
+    await manager.poll_complete_callback()
+    assert controller.write_register.await_args_list[-1] == call(46002, 60)
+    assert controller.write_register.await_args_list.count(call(46001, 12)) == 1
+    writes = controller.write_register.await_count
+    await manager.poll_complete_callback()
+    assert controller.write_register.await_count == writes
+
+
+async def test_failed_enable_retains_original_timeout_for_disable(
+    controller: MagicMock, manager: RemoteControlManager
+) -> None:
+    controller.read_registers.return_value = []
+    with pytest.raises(ValueError, match="Remote enable register"):
+        await manager.set_mode(RemoteControlMode.FORCE_DISCHARGE)
+    await manager.set_mode(RemoteControlMode.DISABLE)
+    assert controller.write_register.await_args_list == [call(46002, 20), call(46002, 60)]
 
 
 async def test_legacy_enable_values_unchanged(controller: MagicMock, config: ModbusRemoteControlAddressConfig) -> None:
-    manager = RemoteControlManager(controller, replace(config, remote_enable_mask=None, remote_enable=44000), 10)
+    manager = RemoteControlManager(
+        controller, replace(config, remote_enable_mask=None, remote_enable=44000, restore_timeout=False), 10
+    )
     await manager.set_mode(RemoteControlMode.FORCE_DISCHARGE)
     await manager.set_mode(RemoteControlMode.DISABLE)
     assert controller.write_register.await_args_list == [call(46002, 20), call(44000, 1), call(44000, 0)]
@@ -138,6 +222,7 @@ async def test_legacy_enable_values_unchanged(controller: MagicMock, config: Mod
 def test_pq1_config_uses_only_supported_monitoring(config: ModbusRemoteControlAddressConfig) -> None:
     assert config.active_power == [46004, 46003]
     assert config.remote_enable_mask == 1
+    assert config.restore_timeout
     assert config.work_mode is None
     assert config.max_soc == 41010
     assert config.battery_soc == [31024]
@@ -153,6 +238,7 @@ async def test_existing_profiles_control_sequence(
     """Exercise every existing model/connection/firmware profile with its actual map."""
     config = legacy_config
     assert config.remote_enable_mask is None
+    assert not config.restore_timeout
     values: dict[int | tuple[int, ...], int] = dict.fromkeys(
         config.pv_voltages, 800 if operation == "day_charge" else 0
     )

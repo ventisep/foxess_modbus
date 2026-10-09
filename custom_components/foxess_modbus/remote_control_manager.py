@@ -25,6 +25,7 @@ class RemoteControlManager(EntityRemoteControlManager, ModbusControllerEntity):
         self._mode = RemoteControlMode.DISABLE
         self._prev_mode = RemoteControlMode.DISABLE
         self._remote_control_enabled = False
+        self._original_timeout: int | None = None
         self._current_import_power = 0  # Set the first time that we enable force charge
         self._discharge_power: int | None = None
         self._charge_power: int | None = None
@@ -294,6 +295,13 @@ class RemoteControlManager(EntityRemoteControlManager, ModbusControllerEntity):
                 await self._controller.write_register(self._addresses.work_mode, fallback_work_mode_value)
 
         if not self._remote_control_enabled:
+            if self._addresses.restore_timeout and self._original_timeout is None:
+                # Read before the first timeout write, not from the telemetry cache.
+                # Keep this value across retries/reconnections and charge/discharge changes.
+                words = await self._controller.read_registers(self._addresses.timeout_set, 1, RegisterType.HOLDING)
+                if len(words) != 1 or not 0 <= words[0] <= 0xFFFF:
+                    raise ValueError("Remote timeout register is unavailable or invalid")
+                self._original_timeout = words[0]
             timeout = self._poll_rate * 2
 
             # We can't do multi-register writes to these registers
@@ -323,6 +331,13 @@ class RemoteControlManager(EntityRemoteControlManager, ModbusControllerEntity):
         if self._remote_control_enabled:
             await self._write_remote_enable(False)
             self._remote_control_enabled = False
+
+        if self._original_timeout is not None:
+            # Restore only after disabling succeeds. Clear the saved value only
+            # after a successful write so a later poll can retry failed restoration.
+            # Also recover a timeout write followed by an unsuccessful enable.
+            await self._controller.write_register(self._addresses.timeout_set, self._original_timeout)
+            self._original_timeout = None
 
         # This might not be available, e.g. on H1 LAN
         if (
