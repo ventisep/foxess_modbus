@@ -262,3 +262,25 @@ async def test_card_highlights_current_schedule_and_basic_mode(hass: HomeAssista
     rendered = template.async_render()
     assert "Overriding Basic mode" in rendered
     assert "Back-up" in rendered
+
+
+@pytest.mark.usefixtures("example")
+async def test_opportunity_entities_are_created_by_ha(hass: HomeAssistant) -> None:
+    from copy import deepcopy
+
+    from homeassistant.setup import async_setup_component
+
+    for direction in ("charge", "discharge"):
+        hass.states.async_remove(f"binary_sensor.foxess_example_{direction}_opportunity")
+    assert await async_setup_component(hass, "template", {"template": deepcopy(PACKAGE["template"])})
+    await hass.async_block_till_done()
+    entities = [s.entity_id for s in hass.states.async_all("binary_sensor") if "opportunity" in s.entity_id]
+    assert "binary_sensor.foxess_example_discharge_opportunity" in entities
+    assert "binary_sensor.foxess_example_charge_opportunity" in entities
+    # Check a real entity update, not only rendering the state template in isolation.
+    state(hass, "input_boolean.foxess_example_discharge_enabled", "on")
+    state(hass, "input_boolean.foxess_example_discharge_window_enabled", "on")
+    state(hass, "input_datetime.foxess_example_discharge_start", "00:00:00")
+    state(hass, "input_datetime.foxess_example_discharge_end", "23:59:59")
+    await hass.async_block_till_done()
+    assert hass.states.get("binary_sensor.foxess_example_discharge_opportunity").state == "on"

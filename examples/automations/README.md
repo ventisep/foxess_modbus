@@ -6,24 +6,110 @@ example automations, helpers and a short shared script. It uses existing remote
 controls; it never writes scheduler records, scheduler enable or Basic Work Mode.
 The optional watchdog number requires this version of the integration.
 
-## Install
+## Install: configuration first, dashboard second
 
-1. Update the integration and reload it. Confirm the PQ1 controls listed below exist.
-2. Save the package as `/config/packages/foxess_remote_overrides.yaml`.
-3. Enable packages in `configuration.yaml`, merging with your existing `homeassistant`
-   section rather than creating a second one:
+There are **two separate YAML files**. Pasting the card alone will show missing
+entities because the package creates its helpers and automations. Installing the
+integration through HACS does **not** install files from this repository's
+`examples` directory.
 
-   ```yaml
-   homeassistant:
-     packages: !include_dir_named packages
-   ```
+### 1. Check the integration version
 
-4. Check configuration and restart HA. **Automatic charge and discharge start
-   disabled and are disabled again on HA restart.** Configure and inspect the
-   helpers before enabling either direction.
-5. Add [the example card](../lovelace/PQ1_REMOTE_OVERRIDES_CARD.yaml) to a dashboard
-   using **Edit → Add card → Manual**. It uses built-in cards only. You can instead
-   put any of these helpers and sensors on your own cards.
+In HA open **Developer tools → States** and search for:
+
+```text
+number.solar_inverter_remote_control_watchdog_timeout
+```
+
+If it is missing, install a release containing the new watchdog control and restart
+HA before using this example. If your inverter has another prefix, substitute it.
+
+### 2. Create the package file on HA
+
+Open your HA File editor or Studio Code Server. Find the folder containing
+`configuration.yaml` (normally `/config`; some editors label it `homeassistant`).
+
+Create a subfolder called `packages`, if it does not already exist. Inside that
+folder create `foxess_remote_overrides.yaml`. Open
+[PQ1_REMOTE_OVERRIDES.yaml](PQ1_REMOTE_OVERRIDES.yaml) from this repository and copy
+**all its contents** into that new file, then save. The first configuration key is
+`input_text:`; keep it at the left margin. Do not add a wrapper around the content.
+
+Your HA files should look like this:
+
+```text
+/config/
+  configuration.yaml
+  packages/
+    foxess_remote_overrides.yaml
+```
+
+Do not put this file under `custom_components`, paste it into a dashboard, or
+paste it into an individual automation's YAML editor.
+
+### 3. Tell HA to load packages
+
+Open `/config/configuration.yaml`. If no `homeassistant:` section exists, add:
+
+```yaml
+homeassistant:
+  packages: !include_dir_named packages
+```
+
+If that section already exists, add only the indented `packages:` line inside it,
+keeping existing settings. Do not create a second `homeassistant:` section. If you
+already load packages, follow that existing arrangement rather than adding another
+`packages:` key or changing an existing include method.
+
+### 4. Check configuration and restart HA
+
+Open **Developer tools → YAML → Check configuration**. Resolve any reported error
+before restarting. Then restart **Home Assistant**, not the entire host.
+
+After HA comes back, check **Developer tools → States** for:
+
+```text
+input_boolean.foxess_example_charge_enabled
+input_number.foxess_example_charge_soc
+script.foxess_example_stop
+```
+
+If these do not exist, the package has not loaded. Check the file location,
+configuration include and HA logs before adding the card.
+
+### 5. Add the dashboard card
+
+Open [PQ1_REMOTE_OVERRIDES_CARD.yaml](../lovelace/PQ1_REMOTE_OVERRIDES_CARD.yaml)
+and copy its **complete contents**. This is the file beginning `type: vertical-stack`.
+
+In your HA dashboard:
+
+1. Select **Edit dashboard** (pencil or menu).
+2. Choose **Add card**, then **Manual**; searching for "Manual" may be necessary.
+3. Replace the editor contents with the complete card YAML.
+4. Select **Save**, then finish dashboard editing.
+
+Paste into the **individual card** editor, not the whole dashboard's raw editor.
+No Mushroom, button-card or other custom frontend is required.
+
+### 6. Configure the card before enabling it
+
+For Octopus charging, set the charge SOC and power, turn on **Use Octopus off-peak
+signal**, then turn on **Enable automatic charging**. Leave **Use charge time
+window** off unless you want the time window to be an additional opportunity.
+If the Octopus signal is already on, charging can start immediately.
+
+For time-based discharge, leave **Use export price signal** off, set the discharge
+start/end times, required SOC reserve, start margin and power. Turn on **Use
+discharge time window**, then **Enable automatic discharging**. Leave the forecast
+sensor field blank to use the manual required-SOC value.
+
+Start with the watchdog at **0 (automatic)**. **Stop example overrides** disables
+both example policies and requests release of their remote session. Neither
+policy modifies the schedules saved in the inverter.
+
+**Automatic charge and discharge are disabled again on HA restart.** The later
+sections explain settings persistence and connection-loss behaviour.
 
 The default integration prefix is `solar_inverter`. If yours differs, edit
 `input_text.foxess_example_prefix` and the two direct integration entity IDs in
