@@ -39,6 +39,7 @@ from custom_components.foxess_modbus.entities.inverter_model_spec import ModbusA
 from custom_components.foxess_modbus.entities.modbus_current_work_mode_sensor import ModbusCurrentWorkModeSensor
 from custom_components.foxess_modbus.entities.modbus_enum_sensor import ModbusEnumSensorDescription
 from custom_components.foxess_modbus.entities.modbus_lambda_sensor import ModbusLambdaSensor
+from custom_components.foxess_modbus.entities.modbus_remote_control_number import ModbusRemoteControlNumber
 from custom_components.foxess_modbus.entities.modbus_select import ModbusSelect
 from custom_components.foxess_modbus.entities.modbus_select import ModbusSelectDescription
 from custom_components.foxess_modbus.entities.modbus_sensor import ModbusSensor
@@ -227,7 +228,11 @@ def test_profile_and_entities(controller: ModbusController, sensors: dict[str, S
     assert controller.charge_periods == []
     numbers = profile.create_entities(NumberEntity, controller)
     selects = profile.create_entities(SelectEntity, controller)
-    assert {entity.entity_description.key for entity in numbers} == {"force_charge_power", "force_discharge_power"}
+    assert {entity.entity_description.key for entity in numbers} == {
+        "force_charge_power",
+        "force_discharge_power",
+        "remote_control_watchdog_timeout",
+    }
     assert {entity.entity_description.key for entity in selects} == {"force_charge_mode", "remote_control_target"}
     target = next(entity for entity in selects if entity.entity_description.key == "remote_control_target")
     assert target.entity_description.name == "Target Power Measure"
@@ -829,3 +834,26 @@ def test_remote_active_mode_retains_last_completed_direction_on_failed_change(co
         patch.object(remote, "_mode", RemoteControlMode.FORCE_DISCHARGE),
     ):
         assert remote.active_mode == RemoteControlMode.FORCE_CHARGE
+
+
+def test_watchdog_number_defaults_to_automatic(controller: ModbusController) -> None:
+    profile = inverter_connection_type_profile_from_config(controller.inverter_details)
+    number = cast(
+        ModbusRemoteControlNumber,
+        next(
+            entity
+            for entity in profile.create_entities(NumberEntity, controller)
+            if entity.entity_description.key == "remote_control_watchdog_timeout"
+        ),
+    )
+    assert controller.remote_control_manager is not None
+    with patch.object(number, "schedule_update_ha_state"):
+        number._address_updated()  # noqa: SLF001
+        assert number.native_value == 0
+        assert controller.remote_control_manager.watchdog_timeout == 0
+        assert number.native_max_value == 65535
+        assert number.entity_category is None
+        # Restored/user-entered values survive normal entity updates.
+        number._update_native_value(1800)  # noqa: SLF001
+        number._address_updated()  # noqa: SLF001
+        assert controller.remote_control_manager.watchdog_timeout == 1800

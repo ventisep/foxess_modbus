@@ -332,3 +332,41 @@ async def test_existing_profiles_reconnect_and_failed_enable(
     ]
     assert controller.write_registers.await_count == 2
     controller.read_registers.assert_not_awaited()
+
+
+@pytest.mark.parametrize("requested, effective", [(0, 20), (5, 20), (60, 60), (1800, 1800), (65535, 65535)])
+async def test_watchdog_override_and_restore(
+    controller: MagicMock, manager: RemoteControlManager, requested: int, effective: int
+) -> None:
+    manager.watchdog_timeout = requested
+    await manager.set_mode(RemoteControlMode.FORCE_DISCHARGE)
+    assert controller.write_register.await_args_list[0] == call(46002, effective)
+    await manager.set_mode(RemoteControlMode.DISABLE)
+    assert controller.write_register.await_args_list[-1] == call(46002, 60)
+
+
+async def test_watchdog_change_while_active_retries_failed_write(
+    controller: MagicMock, manager: RemoteControlManager
+) -> None:
+    await manager.set_mode(RemoteControlMode.FORCE_DISCHARGE)
+    manager.watchdog_timeout = 1800
+    controller.write_register.side_effect = OSError("timeout write failed")
+    with pytest.raises(OSError, match="timeout write failed"):
+        await manager.poll_complete_callback()
+    controller.write_register.side_effect = None
+    await manager.poll_complete_callback()
+    assert controller.write_register.await_args_list[-1] == call(46002, 1800)
+    # The update must not re-enable or re-snapshot the original timeout.
+    assert controller.write_register.await_args_list.count(call(46001, 13)) == 1
+    assert controller.read_registers.await_args_list.count(call(46002, 1, RegisterType.HOLDING)) == 1
+    manager.watchdog_timeout = 0
+    await manager.poll_complete_callback()
+    assert controller.write_register.await_args_list[-1] == call(46002, 20)
+    await manager.set_mode(RemoteControlMode.DISABLE)
+    assert controller.write_register.await_args_list[-1] == call(46002, 60)
+
+
+@pytest.mark.parametrize("requested", [-1, 65536])
+def test_invalid_watchdog_override(manager: RemoteControlManager, requested: int) -> None:
+    with pytest.raises(ValueError, match="watchdog timeout"):
+        manager.watchdog_timeout = requested

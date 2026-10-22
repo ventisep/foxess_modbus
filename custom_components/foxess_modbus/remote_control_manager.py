@@ -26,6 +26,8 @@ class RemoteControlManager(EntityRemoteControlManager, ModbusControllerEntity):
         self._prev_mode = RemoteControlMode.DISABLE
         self._remote_control_enabled = False
         self._original_timeout: int | None = None
+        self._watchdog_timeout = 0
+        self._applied_timeout: int | None = None
         self._current_import_power = 0  # Set the first time that we enable force charge
         self._discharge_power: int | None = None
         self._charge_power: int | None = None
@@ -43,6 +45,16 @@ class RemoteControlManager(EntityRemoteControlManager, ModbusControllerEntity):
         self._modbus_addresses = [x for x in modbus_addresses if x is not None]
 
         self._controller.register_modbus_entity(self)
+
+    @property
+    def watchdog_timeout(self) -> int:
+        return self._watchdog_timeout
+
+    @watchdog_timeout.setter
+    def watchdog_timeout(self, value: int) -> None:
+        if not 0 <= value <= 0xFFFF:
+            raise ValueError("Remote watchdog timeout must be between 0 and 65535 seconds")
+        self._watchdog_timeout = value
 
     @property
     def mode(self) -> RemoteControlMode:
@@ -294,18 +306,22 @@ class RemoteControlManager(EntityRemoteControlManager, ModbusControllerEntity):
             if current_work_mode != fallback_work_mode_value:
                 await self._controller.write_register(self._addresses.work_mode, fallback_work_mode_value)
 
-        if not self._remote_control_enabled:
-            if self._addresses.restore_timeout and self._original_timeout is None:
-                # Read before the first timeout write, not from the telemetry cache.
-                # Keep this value across retries/reconnections and charge/discharge changes.
-                words = await self._controller.read_registers(self._addresses.timeout_set, 1, RegisterType.HOLDING)
-                if len(words) != 1 or not 0 <= words[0] <= 0xFFFF:
-                    raise ValueError("Remote timeout register is unavailable or invalid")
-                self._original_timeout = words[0]
-            timeout = self._poll_rate * 2
-
-            # We can't do multi-register writes to these registers
+        if not self._remote_control_enabled and self._addresses.restore_timeout and self._original_timeout is None:
+            # Read before the first timeout write, not from the telemetry cache.
+            # Keep this value across retries/reconnections and charge/discharge changes.
+            words = await self._controller.read_registers(self._addresses.timeout_set, 1, RegisterType.HOLDING)
+            if len(words) != 1 or not 0 <= words[0] <= 0xFFFF:
+                raise ValueError("Remote timeout register is unavailable or invalid")
+            self._original_timeout = words[0]
+        # Keep at least the existing two-poll margin. A longer watchdog only
+        # extends stale-command tolerance; HA still owns SOC and time cut-offs.
+        timeout = max(self._poll_rate * 2, self._watchdog_timeout)
+        if not self._remote_control_enabled or self._applied_timeout != timeout:
+            # Single-register writes only. Retry failed changes on the next poll.
             await self._controller.write_register(self._addresses.timeout_set, timeout)
+            self._applied_timeout = timeout
+
+        if not self._remote_control_enabled:
             await self._write_remote_enable(True)
             self._remote_control_enabled = True
 
@@ -331,6 +347,7 @@ class RemoteControlManager(EntityRemoteControlManager, ModbusControllerEntity):
         if self._remote_control_enabled:
             await self._write_remote_enable(False)
             self._remote_control_enabled = False
+            self._applied_timeout = None
 
         if self._original_timeout is not None:
             # Restore only after disabling succeeds. Clear the saved value only

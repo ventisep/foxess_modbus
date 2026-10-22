@@ -48,6 +48,16 @@ class RemoteControlMode(Enum):
 class EntityRemoteControlManager(ABC):
     @property
     @abstractmethod
+    def watchdog_timeout(self) -> int:
+        """Requested watchdog seconds; zero selects the automatic polling-based value."""
+
+    @watchdog_timeout.setter
+    @abstractmethod
+    def watchdog_timeout(self, value: int) -> None:
+        """Set connection-loss tolerance, not the duration of a charging session."""
+
+    @property
+    @abstractmethod
     def mode(self) -> RemoteControlMode:
         """Get the current mode"""
 
