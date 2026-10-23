@@ -7,7 +7,7 @@ input_text:
     max: 100
   foxess_example_off_peak_entity:
     name: Cheap electricity signal
-    initial: binary_sensor.octopus_energy_electricity_23p2005371_2600002633950_off_peak
+    initial: binary_sensor.octopus_energy_electricity_<<replace with your account>>_off_peak
     max: 255
   foxess_example_export_price_entity:
     name: Export price sensor (p/kWh)
