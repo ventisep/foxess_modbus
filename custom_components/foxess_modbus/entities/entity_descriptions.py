@@ -235,7 +235,9 @@ def _pv_entities() -> Iterable[EntityFactory]:
             # This is techincally a 32-bit register on the G2, but it doesn't appear to actually write the upper word,
             # which means that negative values are represented incorrectly (as 0x0000FFFF etc)
             ModbusAddressesSpec(holding=[39280], models=Inv.H1_G2_SET),
-            ModbusAddressesSpec(holding=[39280, 39279], models=Inv.KH_133 | Inv.H3_PRO_SET | Inv.H3_SMART | Inv.EVO),
+            ModbusAddressesSpec(
+                holding=[39280, 39279], models=Inv.KH_133 | Inv.H3_PRO_SET | Inv.H3_SMART | Inv.EVO | Inv.PQ1
+            ),
         ],
         name="PV1 Power",
     )
@@ -288,7 +290,9 @@ def _pv_entities() -> Iterable[EntityFactory]:
             # This is techincally a 32-bit register on the G2, but it doesn't appear to actually write the upper word,
             # which means that negative values are represented incorrectly (as 0x0000FFFF etc)
             ModbusAddressesSpec(holding=[39282], models=Inv.H1_G2_SET),
-            ModbusAddressesSpec(holding=[39282, 39281], models=Inv.KH_133 | Inv.H3_PRO_SET | Inv.H3_SMART | Inv.EVO),
+            ModbusAddressesSpec(
+                holding=[39282, 39281], models=Inv.KH_133 | Inv.H3_PRO_SET | Inv.H3_SMART | Inv.EVO | Inv.PQ1
+            ),
         ],
         name="PV2 Power",
     )
@@ -335,7 +339,7 @@ def _pv_entities() -> Iterable[EntityFactory]:
             ModbusAddressesSpec(input=[11098], models=Inv.KH_PRE119),
             ModbusAddressesSpec(holding=[31041], models=Inv.KH_PRE133),
             ModbusAddressesSpec(holding=[39284, 39283], models=Inv.KH_133),
-            ModbusAddressesSpec(holding=[39284, 39283], models=Inv.H3_PRO_SET | Inv.H3_SMART | Inv.EVO),
+            ModbusAddressesSpec(holding=[39284, 39283], models=Inv.H3_PRO_SET | Inv.H3_SMART | Inv.EVO | Inv.PQ1),
         ],
         name="PV3 Power",
     )
@@ -381,7 +385,7 @@ def _pv_entities() -> Iterable[EntityFactory]:
         addresses=[
             ModbusAddressesSpec(input=[11101], models=Inv.KH_PRE119),
             ModbusAddressesSpec(holding=[31044], models=Inv.KH_PRE133),
-            ModbusAddressesSpec(holding=[39286, 39285], models=Inv.KH_133 | Inv.H3_PRO_SET | Inv.H3_SMART),
+            ModbusAddressesSpec(holding=[39286, 39285], models=Inv.KH_133 | Inv.H3_PRO_SET | Inv.H3_SMART | Inv.PQ1),
         ],
         name="PV4 Power",
     )
@@ -462,15 +466,13 @@ def _pv_entities() -> Iterable[EntityFactory]:
         name="PV6 Power Total",
         source_entity="pv6_power",
     )
-    # PQ1's observed single-word power readings are unsigned. Use the shared
-    # power helper; full pair width remains unproven despite readable high words.
-    for pv, address in enumerate((39280, 39282, 39284, 39286), start=1):
-        yield _pv_power(
-            key=f"pv{pv}_power",
-            addresses=[ModbusAddressesSpec(holding=[address], models=Inv.PQ1)],
-            name=f"PV{pv} Power",
-            signed=False,
-        )
+    # Fox's V1.05.05.00 protocol defines total PV as S32 watts. PQ1 captures
+    # match the string sum; helpers receive the low word before the high word.
+    yield _pv_power(
+        key="pv_power_now",
+        addresses=[ModbusAddressesSpec(holding=[39119, 39118], models=Inv.PQ1)],
+        name="PV Power",
+    )
     yield ModbusLambdaSensorDescription(
         key="pv_power_now",
         models=[
@@ -508,7 +510,7 @@ def _pv_entities() -> Iterable[EntityFactory]:
         models=[
             EntitySpec(
                 register_types=[RegisterType.INPUT, RegisterType.HOLDING],
-                models=Inv.KH_SET | Inv.H3_SMART | Inv.PQ1,
+                models=Inv.KH_SET | Inv.H3_SMART,
             ),
         ],
         sources=["pv1_power", "pv2_power", "pv3_power", "pv4_power"],

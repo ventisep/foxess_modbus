@@ -452,12 +452,13 @@
   },
   {
     "addresses": [
-      39280
+      39280,
+      39279
     ],
     "key": "pv1_power",
     "name": "PV1 Power",
     "scale": 0.001,
-    "signed": false,
+    "signed": true,
     "type": "sensor"
   },
   {
@@ -482,12 +483,13 @@
   },
   {
     "addresses": [
-      39282
+      39282,
+      39281
     ],
     "key": "pv2_power",
     "name": "PV2 Power",
     "scale": 0.001,
-    "signed": false,
+    "signed": true,
     "type": "sensor"
   },
   {
@@ -512,12 +514,13 @@
   },
   {
     "addresses": [
-      39284
+      39284,
+      39283
     ],
     "key": "pv3_power",
     "name": "PV3 Power",
     "scale": 0.001,
-    "signed": false,
+    "signed": true,
     "type": "sensor"
   },
   {
@@ -542,12 +545,13 @@
   },
   {
     "addresses": [
-      39286
+      39286,
+      39285
     ],
     "key": "pv4_power",
     "name": "PV4 Power",
     "scale": 0.001,
-    "signed": false,
+    "signed": true,
     "type": "sensor"
   },
   {
@@ -561,15 +565,15 @@
     "type": "sensor"
   },
   {
+    "addresses": [
+      39119,
+      39118
+    ],
     "key": "pv_power_now",
     "name": "PV Power",
-    "sources": [
-      "pv1_power",
-      "pv2_power",
-      "pv3_power",
-      "pv4_power"
-    ],
-    "type": "lambda"
+    "scale": 0.001,
+    "signed": true,
+    "type": "sensor"
   },
   {
     "addresses": [

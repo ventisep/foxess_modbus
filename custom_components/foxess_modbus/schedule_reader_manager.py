@@ -80,6 +80,8 @@ class ScheduleReaderManager:
             raise ValueError(f"Invalid schedule enabled flag at {address}")
         if not is_time_value_valid(words[1]) or not is_time_value_valid(words[2]):
             raise ValueError(f"Invalid schedule time at {address}")
+        # Protocol names: MaxSoC_FromGrid (high byte), MinSoC OnGrid (low byte).
+        # Retain the public max_soc/min_soc keys for existing dashboard templates.
         max_soc, min_soc = words[4] >> 8, words[4] & 0xFF
         if not 0 <= min_soc <= max_soc <= 100 or words[5] > 100:
             raise ValueError(f"Invalid schedule SOC at {address}")

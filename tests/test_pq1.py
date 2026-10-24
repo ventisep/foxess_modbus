@@ -247,9 +247,10 @@ def test_profile_and_entities(controller: ModbusController, sensors: dict[str, S
     assert set(range(39601, 39605)) <= addresses
     assert {31049, 31050} <= addresses
     assert not addresses.intersection(range(41001, 41007))
-    assert not addresses.intersection({39118, 44003, 37700, 38307, 38914, 39605})
+    assert not addresses.intersection({44003, 37700, 38307, 38914, 39605})
     assert not addresses.intersection(range(48010, 48970))
-    assert isinstance(sensors["pv_power_now"], ModbusLambdaSensor)
+    assert isinstance(sensors["pv_power_now"], ModbusSensor)
+    assert cast(ModbusControllerEntity, sensors["pv_power_now"]).addresses == [39119, 39118]
     assert cast(ModbusControllerEntity, sensors["load_power"]).addresses == [39226, 39225]
     assert cast(ModbusControllerEntity, sensors["solar_energy_total"]).addresses == [39602, 39601]
     assert cast(ModbusControllerEntity, sensors["solar_energy_today"]).addresses == [39604, 39603]
@@ -295,8 +296,8 @@ async def test_poll_ranges_avoid_invalid_block(
     [
         ("pv3_voltage", {39074: 2561}, 256.1),
         ("pv3_current", {39075: 150}, 1.5),
-        ("pv3_power", {39284: 395}, 0.395),
-        ("pv1_power", {39280: 40000}, 40),
+        ("pv3_power", {39283: 0, 39284: 395}, 0.395),
+        ("pv1_power", {39279: 0, 39280: 40000}, 40),
         ("invbatvolt", {31020: 4000}, 400),
         ("batvolt", {37609: 2629}, 262.9),
         ("invbatcurrent", {31021: 65521}, -1.5),
@@ -513,17 +514,48 @@ def test_duplicate_pairs_require_both_words(
     assert numeric_value(sensors[key]) is None
 
 
-def test_pv_total_uses_all_four_confirmed_strings(hass: HomeAssistant, sensors: dict[str, SensorEntity]) -> None:
-    sensor = cast(ModbusLambdaSensor, sensors["pv_power_now"])
-    sensor.hass = hass
-    for pv, power in enumerate((0.430, 0.411, 0.448, 0.050), start=1):
-        hass.states.async_set(sensors[f"pv{pv}_power"].entity_id, str(power))
-    with patch.object(sensor, "schedule_update_ha_state"):
-        sensor._update_value()  # noqa: SLF001
-        assert sensor.native_value == pytest.approx(1.339)
-        hass.states.async_set(sensors["pv3_power"].entity_id, "unavailable")
-        sensor._update_value()  # noqa: SLF001
-        assert sensor.native_value is None
+@pytest.mark.parametrize(
+    "key, high_address",
+    [("pv1_power", 39279), ("pv2_power", 39281), ("pv3_power", 39283), ("pv4_power", 39285), ("pv_power_now", 39118)],
+)
+@pytest.mark.parametrize(
+    "high, low, expected",
+    [(0, 264, 0.264), (1, 2, 65.538), (65535, 65535, 0), (None, 264, None), (0, None, None)],
+)
+def test_pv_power_pairs(
+    controller: ModbusController,
+    sensors: dict[str, SensorEntity],
+    key: str,
+    high_address: int,
+    high: int | None,
+    low: int | None,
+    expected: float | None,
+) -> None:
+    # Nonzero high words verify full width/order. Negative idle readings use
+    # the shared PV helper's zero clamp, rather than becoming large positives.
+    set_registers(controller, {high_address: high, high_address + 1: low})
+    sensor = sensors[key]
+    assert cast(ModbusControllerEntity, sensor).addresses == [high_address + 1, high_address]
+    assert sensor.entity_id == f"sensor.pq1_{key}"
+    assert sensor.unique_id == f"foxess_modbus_pq1_{key}"
+    if expected is None:
+        assert numeric_value(sensor) is None
+    else:
+        assert numeric_value(sensor) == pytest.approx(expected)
+
+
+def test_pv_total_matches_recorded_string_sum(controller: ModbusController, sensors: dict[str, SensorEntity]) -> None:
+    # User confirms the total pair matches the string sum. The total entity
+    # now reads independently, without depending on HA source-entity states.
+    set_registers(
+        controller,
+        {39118: 0, 39119: 1289, 39279: 0, 39280: 430, 39281: 0, 39282: 411, 39283: 0, 39284: 448, 39285: 0, 39286: 0},
+    )
+    assert numeric_value(sensors["pv_power_now"]) == pytest.approx(1.289)
+    assert sum(cast(float, numeric_value(sensors[f"pv{pv}_power"])) for pv in range(1, 5)) == pytest.approx(1.289)
+    set_registers(controller, {39283: None})
+    assert numeric_value(sensors["pv3_power"]) is None
+    assert numeric_value(sensors["pv_power_now"]) == pytest.approx(1.289)
 
 
 @pytest.mark.parametrize(

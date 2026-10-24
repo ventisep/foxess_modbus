@@ -68,7 +68,8 @@ content: |
   **{{ loop.index }} · {{ entry.start }}–{{ entry.end }}** · {{ 'Enabled' if entry.enabled else 'Disabled' }}
 
   - **Mode:** {{ entry.work_mode | e }}
-  - **SOC limits:** {{ entry.min_soc }}–{{ entry.max_soc }}%
+  - **Minimum SOC on-grid:** {{ entry.min_soc }}%
+  - **Maximum SOC from grid:** {{ entry.max_soc }}%
   - **Mode SOC setting:** {{ entry.mode_soc }}%
   - **Power setting:** {{ '%.2f' | format(entry.power_w / 1000) }} kW
   {% if entry.after_soc_applicable == true %}
@@ -83,7 +84,8 @@ content: |
   Applies outside enabled periods when the scheduler is enabled.
 
   - **Mode:** {{ state_attr(remaining, 'work_mode') | e }}
-  - **SOC limits:** {{ state_attr(remaining, 'min_soc') }}–{{ state_attr(remaining, 'max_soc') }}%
+  - **Minimum SOC on-grid:** {{ state_attr(remaining, 'min_soc') }}%
+  - **Maximum SOC from grid:** {{ state_attr(remaining, 'max_soc') }}%
   - **Mode SOC setting:** {{ state_attr(remaining, 'mode_soc') }}%
   - **Power setting:** {{ '%.2f' | format(state_attr(remaining, 'power_w') / 1000) }} kW
 

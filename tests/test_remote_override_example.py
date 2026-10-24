@@ -151,7 +151,10 @@ async def test_manual_cancel_and_missing_soc(hass: HomeAssistant, example: Any) 
 async def test_opportunity_signals_and_overnight_window(hass: HomeAssistant) -> None:
     state(hass, "input_boolean.foxess_example_charge_enabled", "on")
     state(hass, "input_boolean.foxess_example_cheap_enabled", "on")
-    octopus = PACKAGE["input_text"]["foxess_example_off_peak_entity"]["initial"]
+    # The distributed package contains an account placeholder, not a valid HA
+    # entity ID. Simulate the user supplying their own tariff signal.
+    octopus = "binary_sensor.example_octopus_off_peak"
+    state(hass, "input_text.foxess_example_off_peak_entity", octopus)
     state(hass, octopus, "on")
     charge = Template(PACKAGE["template"][0]["binary_sensor"][0]["state"], hass)
     assert charge.async_render() is True
